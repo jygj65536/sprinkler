@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @keyframes drip {
+      0%   { transform: translateY(-26px); opacity: 0; }
+      18%  { opacity: 1; }
+      82%  { opacity: 1; }
+      100% { transform: translateY(50px); opacity: 0; }
+    }
+    @keyframes swell {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50%      { transform: translateY(2px) scale(1.04); }
+    }
+  </style>
+</helmet>
+
+<div style="width:max-content; min-width:100%; min-height:100vh; box-sizing:border-box; padding:48px; background:#e7e5df; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+
+  <div style="max-width:560px;">
+    <div style="font:700 28px/1.2 'Helvetica Neue',Helvetica,Arial,sans-serif; color:#26261f;">물방울 표현 아이디에이션</div>
+    <div style="font:400 14px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace; color:#6a6a5f; margin-top:8px;">물주기 앱 로고에 ‘물’을 더하는 6가지 방향. Forest 팔레트 기준으로 같은 식물 마크에 물 요소만 다르게 얹었습니다.</div>
+  </div>
+
+  <div style="display:flex; gap:30px; align-items:flex-start; margin-top:32px;">
+
+    <!-- 01 — Dewdrop on a leaf -->
+    <div style="flex:none; width:288px; display:flex; flex-direction:column; gap:14px;">
+      <div>
+        <div style="font:600 15px/1.3 'Helvetica Neue',Helvetica,Arial,sans-serif; color:#26261f;">01 · 잎 끝 이슬방울</div>
+        <div style="font:400 13px/1.5 ui-monospace,monospace; color:#7a7a6e; margin-top:3px;">잎 끝에 물방울이 맺혀 곧 떨어질 듯한 디테일. 가장 미니멀.</div>
+      </div>
+      <div style="background:#fff; border-radius:2px; box-shadow:0 1px 3px rgba(0,0,0,.08); padding:14px; display:flex; align-items:center; justify-content:center;">
+        <svg width="256" height="256" viewBox="0 0 600 600" style="display:block;">
+          <rect x="0" y="0" width="600" height="600" rx="132" fill="#364A35"></rect>
+          <g fill="none" stroke="#F8FFF5" stroke-width="12.5" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,35) translate(210,560) scale(1.32) translate(-210,-560)">
+            <path d="M118 458 L302 458"></path>
+            <path d="M128 474 Q210 482 292 474"></path>
+            <path d="M140 464 L166 600"></path>
+            <path d="M280 464 L254 600"></path>
+            <path d="M211 456 C207 408 214 360 211 312 C210 290 211 272 210 254"></path>
+            <path d="M210 408 C257 399 287 367 289 325 C250 334 220 364 210 408 Z"></path>
+            <path d="M210 364 C163 355 133 323 131 281 C170 290 200 320 210 364 Z"></path>
+            <path d="M210 320 C257 311 287 279 289 237 C250 246 220 276 210 320 Z"></path>
+          </g>
+          <g style="animation: swell 2.6s ease-in-out infinite; transform-origin: 314px 300px;">
+            <path transform="translate(282.8 279.8) scale(2.6)" d="M12 2 C12 2 5 11 5 16 A7 7 0 0 0 19 16 C19 11 12 2 12 2 Z" fill="#F8FFF5" stroke="none"></path>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 02 — Droplet crown -->
+    <div style="flex:none; width:288px; display:flex; flex-direction:column; gap:14px;">
+      <div>
+        <div style="font:600 15px/1.3 'Helvetica Neue',Helvetica,Arial,sans-serif; color:#26261f;">02 · 물방울 새싹</div>
+        <div style="font:400 13px/1.5 ui-monospace,monospace; color:#7a7a6e; margin-top:3px;">줄기 끝 새순 자리를 물방울로. ‘물=성장’ 은유.</div>
+      </div>
+      <div style="background:#fff; border-radius:2px; box-shadow:0 1px 3px rgba(0,0,0,.08); padding:14px; display:flex; align-items:center; justify-content:center;">
+        <svg width="256" height="256" viewBox="0 0 600 600" style="display:block;">
+          <rect x="0" y="0" width="600" height="600" rx="132" fill="#364A35"></rect>
+          <g fill="none" stroke="#F8FFF5" stroke-width="12.5" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,35) translate(210,560) scale(1.32) translate(-210,-560)">
+            <path d="M118 458 L302 458"></path>
+            <path d="M128 474 Q210 482 292 474"></path>
+            <path d="M140 464 L166 600"></path>
+            <path d="M280 464 L254 600"></path>
+            <path d="M211 456 C207 408 214 360 211 312 C210 290 211 272 210 254"></path>
+            <path d="M210 408 C257 399 287 367 289 325 C250 334 220 364 210 408 Z"></path>
+            <path d="M210 364 C163 355 133 323 131 281 C170 290 200 320 210 364 Z"></path>
+            <path d="M210 320 C257 311 287 279 289 237 C250 246 220 276 210 320 Z"></path>
+          </g>
+          <path transform="translate(174 144) scale(3)" d="M12 2 C12 2 5 11 5 16 A7 7 0 0 0 19 16 C19 11 12 2 12 2 Z" fill="none" stroke="#F8FFF5" stroke-width="4.2" stroke-linejoin="round"></path>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 03 — Falling rain -->
+    <div style="flex:none; width:288px; display:flex; flex-direction:column; gap:14px;">
+      <div>
+        <div style="font:600 15px/1.3 'Helvetica Neue',Helvetica,Arial,sans-serif; color:#26261f;">03 · 떨어지는 빗방울</div>
+        <div style="font:400 13px/1.5 ui-monospace,monospace; color:#7a7a6e; margin-top:3px;">식물 위로 떨어지는 물방울 (애니메이션). 동적인 앱 아이콘.</div>
+      </div>
+      <div style="background:#fff; border-radius:2px; box-shadow:0 1px 3px rgba(0,0,0,.08); padding:14px; display:flex; align-items:center; justify-content:center;">
+        <svg width="256" height="256" viewBox="0 0 600 600" style="display:block;">
+          <rect x="0" y="0" width="600" height="600" rx="132" fill="#364A35"></rect>
+          <g style="animation: drip 1.6s ease-in infinite; animation-delay: 0s;">
+            <path transform="translate(148.6 90.6) scale(2.2)" d="M12 2 C12 2 5 11 5 16 A7 7 0 0 0 19 16 C19 11 12 2 12 2 Z" fill="#CFE9D2" stroke="none"></path>
+          </g>
+          <g style="animation: drip 1.6s ease-in infinite; animation-delay: .55s;">
+            <path transform="translate(243.4 66.4) scale(1.8)" d="M12 2 C12 2 5 11 5 16 A7 7 0 0 0 19 16 C19 11 12 2 12 2 Z" fill="#CFE9D2" stroke="none"></path>
+          </g>
+          <g style="animation: drip 1.6s ease-in infinite; animation-delay: .95s;">
+            <path transform="translate(286 116) scale(2)" d="M12 2 C12 2 5 11 5 16 A7 7 0 0 0 19 16 C19 11 12 2 12 2 Z" fill="#CFE9D2" stroke="none"></path>
+          </g>
+          <g fill="none" stroke="#F8FFF5" stroke-width="12.5" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,35) translate(210,560) scale(1.32) translate(-210,-560)">
+            <path d="M118 458 L302 458"></path>
+            <path d="M128 474 Q210 482 292 474"></path>
+            <path d="M140 464 L166 600"></path>
+            <path d="M280 464 L254 600"></path>
+            <path d="M211 456 C207 408 214 360 211 312 C210 290 211 272 210 254"></path>
+            <path d="M210 408 C257 399 287 367 289 325 C250 334 220 364 210 408 Z"></path>
+            <path d="M210 364 C163 355 133 323 131 281 C170 290 200 320 210 364 Z"></path>
+            <path d="M210 320 C257 311 287 279 289 237 C250 246 220 276 210 320 Z"></path>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 04 — Plant grows from a drop -->
+    <div style="flex:none; width:288px; display:flex; flex-direction:column; gap:14px;">
+      <div>
+        <div style="font:600 15px/1.3 'Helvetica Neue',Helvetica,Arial,sans-serif; color:#26261f;">04 · 물방울 화분</div>
+        <div style="font:400 13px/1.5 ui-monospace,monospace; color:#7a7a6e; margin-top:3px;">화분 대신 큰 물방울에서 식물이 자라남. 물이 곧 양분.</div>
+      </div>
+      <div style="background:#fff; border-radius:2px; box-shadow:0 1px 3px rgba(0,0,0,.08); padding:14px; display:flex; align-items:center; justify-content:center;">
+        <svg width="256" height="256" viewBox="0 0 600 600" style="display:block;">
+          <rect x="0" y="0" width="600" height="600" rx="132" fill="#364A35"></rect>
+          <path transform="translate(101.4 411.9) scale(9.05)" d="M12 2 C12 2 5 11 5 16 A7 7 0 0 0 19 16 C19 11 12 2 12 2 Z" fill="none" stroke="#F8FFF5" stroke-width="1.38" stroke-linejoin="round"></path>
+          <g fill="none" stroke="#F8FFF5" stroke-width="12.5" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,35) translate(210,560) scale(1.32) translate(-210,-560)">
+            <path d="M211 456 C207 408 214 360 211 312 C210 290 211 272 210 254"></path>
+            <path d="M210 408 C257 399 287 367 289 325 C250 334 220 364 210 408 Z"></path>
+            <path d="M210 364 C163 355 133 323 131 281 C170 290 200 320 210 364 Z"></path>
+            <path d="M210 320 C257 311 287 279 289 237 C250 246 220 276 210 320 Z"></path>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 05 — Watering pour -->
+    <div style="flex:none; width:288px; display:flex; flex-direction:column; gap:14px;">
+      <div>
+        <div style="font:600 15px/1.3 'Helvetica Neue',Helvetica,Arial,sans-serif; color:#26261f;">05 · 물 붓기</div>
+        <div style="font:400 13px/1.5 ui-monospace,monospace; color:#7a7a6e; margin-top:3px;">모서리에서 식물로 쏟아지는 물줄기 (애니메이션). ‘물주기’ 행위 자체.</div>
+      </div>
+      <div style="background:#fff; border-radius:2px; box-shadow:0 1px 3px rgba(0,0,0,.08); padding:14px; display:flex; align-items:center; justify-content:center;">
+        <svg width="256" height="256" viewBox="0 0 600 600" style="display:block;">
+          <rect x="0" y="0" width="600" height="600" rx="132" fill="#364A35"></rect>
+          <g fill="none" stroke="#F8FFF5" stroke-width="12.5" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,35) translate(210,560) scale(1.32) translate(-210,-560)">
+            <path d="M118 458 L302 458"></path>
+            <path d="M128 474 Q210 482 292 474"></path>
+            <path d="M140 464 L166 600"></path>
+            <path d="M280 464 L254 600"></path>
+            <path d="M211 456 C207 408 214 360 211 312 C210 290 211 272 210 254"></path>
+            <path d="M210 408 C257 399 287 367 289 325 C250 334 220 364 210 408 Z"></path>
+            <path d="M210 364 C163 355 133 323 131 281 C170 290 200 320 210 364 Z"></path>
+            <path d="M210 320 C257 311 287 279 289 237 C250 246 220 276 210 320 Z"></path>
+          </g>
+          <g style="animation: drip 1.5s ease-in infinite; animation-delay: 0s;"><path transform="translate(396.2 100.2) scale(2.4)" d="M12 2 C12 2 5 11 5 16 A7 7 0 0 0 19 16 C19 11 12 2 12 2 Z" fill="#CFE9D2" stroke="none"></path></g>
+          <g style="animation: drip 1.5s ease-in infinite; animation-delay: .2s;"><path transform="translate(358.6 133.6) scale(2.2)" d="M12 2 C12 2 5 11 5 16 A7 7 0 0 0 19 16 C19 11 12 2 12 2 Z" fill="#CFE9D2" stroke="none"></path></g>
+          <g style="animation: drip 1.5s ease-in infinite; animation-delay: .4s;"><path transform="translate(316 164) scale(2)" d="M12 2 C12 2 5 11 5 16 A7 7 0 0 0 19 16 C19 11 12 2 12 2 Z" fill="#CFE9D2" stroke="none"></path></g>
+          <g style="animation: drip 1.5s ease-in infinite; animation-delay: .6s;"><path transform="translate(276.4 192.4) scale(1.8)" d="M12 2 C12 2 5 11 5 16 A7 7 0 0 0 19 16 C19 11 12 2 12 2 Z" fill="#CFE9D2" stroke="none"></path></g>
+          <g style="animation: drip 1.5s ease-in infinite; animation-delay: .8s;"><path transform="translate(242.8 218.8) scale(1.6)" d="M12 2 C12 2 5 11 5 16 A7 7 0 0 0 19 16 C19 11 12 2 12 2 Z" fill="#CFE9D2" stroke="none"></path></g>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 06 — Water level in pot -->
+    <div style="flex:none; width:288px; display:flex; flex-direction:column; gap:14px;">
+      <div>
+        <div style="font:600 15px/1.3 'Helvetica Neue',Helvetica,Arial,sans-serif; color:#26261f;">06 · 화분 속 물</div>
+        <div style="font:400 13px/1.5 ui-monospace,monospace; color:#7a7a6e; margin-top:3px;">화분 입구의 물결선 + 떨어지는 한 방울. 토양 수분/저수 상태.</div>
+      </div>
+      <div style="background:#fff; border-radius:2px; box-shadow:0 1px 3px rgba(0,0,0,.08); padding:14px; display:flex; align-items:center; justify-content:center;">
+        <svg width="256" height="256" viewBox="0 0 600 600" style="display:block;">
+          <rect x="0" y="0" width="600" height="600" rx="132" fill="#364A35"></rect>
+          <g fill="none" stroke="#F8FFF5" stroke-width="12.5" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,35) translate(210,560) scale(1.32) translate(-210,-560)">
+            <path d="M118 458 L302 458"></path>
+            <path d="M128 474 Q210 482 292 474"></path>
+            <path d="M140 464 L166 600"></path>
+            <path d="M280 464 L254 600"></path>
+            <path d="M211 456 C207 408 214 360 211 312 C210 290 211 272 210 254"></path>
+            <path d="M210 408 C257 399 287 367 289 325 C250 334 220 364 210 408 Z"></path>
+            <path d="M210 364 C163 355 133 323 131 281 C170 290 200 320 210 364 Z"></path>
+            <path d="M210 320 C257 311 287 279 289 237 C250 246 220 276 210 320 Z"></path>
+          </g>
+          <path d="M120 486 q18 -11 36 0 t36 0 t36 0 t36 0 t36 0" fill="none" stroke="#9BD9C0" stroke-width="11" stroke-linecap="round"></path>
+          <g style="animation: drip 1.7s ease-in infinite;"><path transform="translate(188 406) scale(2)" d="M12 2 C12 2 5 11 5 16 A7 7 0 0 0 19 16 C19 11 12 2 12 2 Z" fill="#9BD9C0" stroke="none"></path></g>
+        </svg>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<template id="__bundler_thumbnail">
+  <svg viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+    <rect width="600" height="600" rx="120" fill="#364A35"></rect>
+    <path d="M300 150 C300 150 235 250 235 305 A65 65 0 0 0 365 305 C365 250 300 150 300 150 Z" fill="none" stroke="#F8FFF5" stroke-width="22"></path>
+    <path d="M300 470 L300 360" fill="none" stroke="#9BD9C0" stroke-width="22" stroke-linecap="round"></path>
+  </svg>
+</template>
+</x-dc>
+</body>
+</html>

@@ -1,10 +1,10 @@
 @docs/skills/apps-in-toss.md
-@docs/skills/tds-mobile.md
+`@docs/skills/tds-mobile.md`
 
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
+`
 ## Project Overview
 
 토스 앱인토스(Apps in Toss) 플랫폼에 입점할 **식물 물주기 알림 미니앱**이다. 식집사(식물 키우는 사람)가 물주기 기록을 남기고, 과거 기록 기반으로 다음 물주기 타이밍에 푸시 알림을 받을 수 있게 한다.
@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 핵심 기능 세 가지:
 1. 식물 검색 → "내 식물" 추가 (이름, 사진, 이상적 물주기 기간 자동 조회)
 2. 식물별 물주기 날짜 기록 (리스트 / 캘린더 뷰)
-3. 마지막 물주기 + 권장 주기 기반 푸시 알림
+3. 마지막 물주기 + 권장 주기 기반 알림 (앱 접속 시 메인화면 / 푸시 알림 / 위젯)
 
 ## 플랫폼: 앱인토스
 
@@ -53,7 +53,7 @@ export default {
 
 ```
 pages/index.tsx           → intoss://sprinkler               (Home: 내 식물 목록 + 건강상태 표시 + 새 식물 추가 진입)
-pages/calendar.tsx        → intoss://sprinkler/calendar       (달력: 식물별 물주기 내역 및 미래 일정)
+pages/calendar.tsx        → intoss://sprinkler/calendar       (달력: 식물별 물주기 내역 + 미래 물주기 예정일 range 표기, 노출 식물 수 유저가 선택)
 pages/plants/[id].tsx     → intoss://sprinkler/plants/:id     (내 식물 상세: 메타정보 + 유대정보 + 물주기 데이터)
 pages/plants/add.tsx      → intoss://sprinkler/plants/add     (식물 추가: 검색 → 내 식물 등록)
 ```

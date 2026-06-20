@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:ital,wght@0,300..800;1,300..800&family=Caveat:wght@400..700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    .scrl::-webkit-scrollbar { width: 0; height: 0; }
+    @keyframes popIn { 0% { transform: translateY(8px) scale(.97); opacity: 0; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+    @keyframes toastIn { 0% { transform: translate(-50%, 16px); opacity: 0; } 100% { transform: translate(-50%, 0); opacity: 1; } }
+    @keyframes wiggle { 0%,100% { transform: rotate(-1.2deg); } 50% { transform: rotate(1.2deg); } }
+  </style>
+</helmet>
+
+<div style="min-height:100vh;width:100%;display:flex;align-items:center;justify-content:center;background:#DCE6D0;background-image:radial-gradient(#C5D4B5 1px,transparent 1px);background-size:22px 22px;padding:32px 0;font-family:'Shantell Sans',sans-serif;">
+  <div style="--paper:#F8FFF5;--ink:#364A35;--soft:#75866C;--line:#DBE7CE;--faint:#EAF4DC;--accent:#CCF695;position:relative;width:390px;height:844px;background:var(--paper);border-radius:46px;border:2.5px solid var(--ink);box-shadow:0 26px 60px -24px rgba(40,34,22,.5);overflow:hidden;color:var(--ink);">
+
+    <!-- status bar -->
+    <div style="position:absolute;top:0;left:0;right:0;height:50px;z-index:40;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:15px;font-weight:600;letter-spacing:.3px;">
+      <span>10:36</span>
+      <span style="display:flex;align-items:center;gap:6px;">
+        <span style="font-size:13px;">85</span>
+        <span style="display:inline-block;width:24px;height:13px;border:2px solid var(--ink);border-radius:4px;position:relative;">
+          <span style="position:absolute;left:1.5px;top:1.5px;bottom:1.5px;width:14px;background:var(--ink);border-radius:1.5px;"></span>
+          <span style="position:absolute;right:-4px;top:3px;bottom:3px;width:2px;background:var(--ink);border-radius:2px;"></span>
+        </span>
+      </span>
+    </div>
+
+    <div class="scrl" style="position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;">
+
+      <!-- ============ HOME ============ -->
+      <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+        <div style="padding:62px 22px 120px;">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:6px;">
+            <div>
+              <div style="font-size:13px;color:var(--soft);font-weight:500;letter-spacing:.5px;">{{ todayLabel }}</div>
+              <div style="font-family:'Caveat',cursive;font-size:42px;font-weight:700;line-height:1;margin-top:4px;white-space:nowrap;">오늘의 식구들</div>
+            </div>
+          </div>
+
+          <div style="margin:18px 0 22px;border:2px solid var(--ink);border-radius:20px 22px 19px 23px;padding:15px 18px;display:flex;align-items:center;gap:14px;background:var(--accent);">
+            <div style="width:42px;height:42px;flex:none;color:var(--ink);" dangerouslySetInnerHTML="{{ summaryDoodle }}"></div>
+            <div>
+              <div style="font-size:17px;font-weight:700;line-height:1.25;">{{ summaryText }}</div>
+              <div style="font-size:13px;color:var(--soft);margin-top:2px;">{{ summarySub }}</div>
+            </div>
+          </div>
+
+          <sc-for list="{{ homePlants }}" as="p" hint-placeholder-count="4">
+            <div onClick="{{ p.onOpen }}" style="display:flex;align-items:center;gap:14px;padding:13px 14px;margin-bottom:12px;background:var(--paper);border:2px solid var(--ink);border-radius:21px 19px 22px 18px;cursor:pointer;box-shadow:3px 3px 0 0 var(--line);">
+              <div style="width:60px;height:60px;flex:none;color:var(--ink);" dangerouslySetInnerHTML="{{ p.doodleHtml }}"></div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:18px;font-weight:700;line-height:1.1;">{{ p.name }}</div>
+                <div style="font-size:12.5px;color:var(--soft);margin-top:1px;">{{ p.lastText }}</div>
+                <div style="display:inline-flex;align-items:center;gap:5px;margin-top:7px;padding:3px 10px 4px;border-radius:11px;border:1.5px solid {{ p.statusColor }};">
+                  <span style="width:8px;height:8px;border-radius:50%;background:{{ p.statusColor }};"></span>
+                  <span style="font-size:12.5px;font-weight:700;color:{{ p.statusColor }};">{{ p.statusLabel }}</span>
+                </div>
+              </div>
+              <div onClick="{{ p.onWater }}" title="물 줬어요" style="width:46px;height:46px;flex:none;border:2px solid var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--ink);background:var(--paper);">
+                <div style="width:22px;height:24px;" dangerouslySetInnerHTML="{{ dropDoodle }}"></div>
+              </div>
+            </div>
+          </sc-for>
+
+          <div onClick="{{ goAdd }}" style="margin-top:6px;display:flex;align-items:center;justify-content:center;gap:9px;padding:15px;border:2.5px dashed var(--soft);border-radius:20px;cursor:pointer;color:var(--soft);font-size:16px;font-weight:700;">
+            <span style="font-size:22px;line-height:1;">＋</span> 새로운 식물 들이기
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ============ CALENDAR ============ -->
+      <sc-if value="{{ isCalendar }}" hint-placeholder-val="{{ true }}">
+        <div style="padding:62px 18px 120px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <div onClick="{{ prevMonth }}" style="width:36px;height:36px;border:2px solid var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;">‹</div>
+            <div style="font-family:'Caveat',cursive;font-size:34px;font-weight:700;line-height:1;white-space:nowrap;">{{ monthLabel }}</div>
+            <div onClick="{{ nextMonth }}" style="width:36px;height:36px;border:2px solid var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;">›</div>
+          </div>
+
+          <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;">
+            <sc-for list="{{ chips }}" as="c" hint-placeholder-count="5">
+              <div onClick="{{ c.onToggle }}" style="display:inline-flex;align-items:center;gap:6px;padding:5px 11px 6px;border-radius:14px;border:2px solid {{ c.borderCol }};background:{{ c.bg }};cursor:pointer;font-size:13px;font-weight:700;color:{{ c.textCol }};">
+                <span style="width:9px;height:9px;border-radius:50%;background:{{ c.dotCol }};border:1.5px solid {{ c.color }};"></span>
+                {{ c.name }}
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="border:2px solid var(--ink);border-radius:22px;padding:12px 10px 14px;background:var(--paper);">
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:4px;">
+              <sc-for list="{{ weekdays }}" as="w" hint-placeholder-count="7">
+                <div style="text-align:center;font-size:11.5px;font-weight:700;color:{{ w.col }};padding-bottom:4px;">{{ w.label }}</div>
+              </sc-for>
+            </div>
+            <sc-for list="{{ weeks }}" as="week" hint-placeholder-count="6">
+              <div style="display:grid;grid-template-columns:repeat(7,1fr);">
+                <sc-for list="{{ week }}" as="d" hint-placeholder-count="7">
+                  <div style="aspect-ratio:1/1.08;display:flex;flex-direction:column;align-items:center;padding-top:5px;position:relative;background:{{ d.bandBg }};border-radius:9px;">
+                    <sc-if value="{{ d.isToday }}" hint-placeholder-val="{{ false }}">
+                      <div style="position:absolute;top:2px;width:26px;height:26px;border:2px solid var(--ink);border-radius:50%;background:var(--accent);"></div>
+                    </sc-if>
+                    <div style="font-size:13px;font-weight:600;color:{{ d.numCol }};z-index:1;line-height:1.5;">{{ d.day }}</div>
+                    <div style="display:flex;gap:2.5px;margin-top:3px;flex-wrap:wrap;justify-content:center;max-width:34px;">
+                      <sc-for list="{{ d.pastDots }}" as="dot" hint-placeholder-count="0">
+                        <span style="width:7px;height:7px;border-radius:50%;background:{{ dot }};"></span>
+                      </sc-for>
+                      <sc-for list="{{ d.futureDots }}" as="fc" hint-placeholder-count="0">
+                        <span style="width:7px;height:7px;border-radius:50%;border:1.6px solid {{ fc }};background:transparent;"></span>
+                      </sc-for>
+                      <sc-if value="{{ d.isCenter }}" hint-placeholder-val="{{ false }}">
+                        <span style="width:8px;height:8px;border-radius:50%;border:2px solid {{ d.centerCol }};background:transparent;"></span>
+                      </sc-if>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:16px;margin:12px 4px 0;font-size:11.5px;color:var(--soft);">
+            <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--soft);"></span>물 준 날</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:50%;border:1.6px solid var(--soft);"></span>물 줄 날</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:14px;height:9px;border-radius:3px;background:rgba(133,123,105,.22);"></span>물주기 구간</span>
+          </div>
+
+          <div style="margin-top:20px;">
+            <div style="font-family:'Caveat',cursive;font-size:26px;font-weight:700;margin-bottom:10px;">다가오는 물주기</div>
+            <sc-for list="{{ upcoming }}" as="u" hint-placeholder-count="3">
+              <div onClick="{{ u.onOpen }}" style="display:flex;align-items:center;gap:12px;padding:11px 14px;margin-bottom:9px;border:2px solid var(--ink);border-radius:17px 19px 16px 18px;cursor:pointer;">
+                <span style="width:11px;height:11px;border-radius:50%;background:{{ u.color }};flex:none;"></span>
+                <div style="flex:1;">
+                  <div style="font-size:15.5px;font-weight:700;">{{ u.name }}</div>
+                  <div style="font-size:12px;color:var(--soft);">{{ u.rangeText }}</div>
+                </div>
+                <div style="font-size:14px;font-weight:700;color:{{ u.dueCol }};">{{ u.dueText }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ============ DETAIL ============ -->
+      <sc-if value="{{ isDetail }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:54px 0 120px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:0 20px 6px;">
+            <div onClick="{{ goBack }}" style="width:38px;height:38px;border:2px solid var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;">‹</div>
+            <div onClick="{{ dt.onWater }}" style="display:flex;align-items:center;gap:7px;padding:7px 14px 8px;border:2px solid var(--ink);border-radius:16px;cursor:pointer;background:var(--ink);color:var(--paper);font-weight:700;font-size:14px;">
+              <span style="width:15px;height:17px;display:inline-block;" dangerouslySetInnerHTML="{{ dropDoodleLight }}"></span>
+              물 줬어요
+            </div>
+          </div>
+
+          <div style="text-align:center;padding:4px 24px 0;">
+            <div style="width:150px;height:150px;margin:0 auto;color:var(--ink);" dangerouslySetInnerHTML="{{ dt.doodleHtml }}"></div>
+            <div style="font-family:'Caveat',cursive;font-size:40px;font-weight:700;line-height:1;margin-top:2px;">{{ dt.name }}</div>
+            <div style="font-size:13px;color:var(--soft);font-style:italic;margin-top:3px;">{{ dt.sci }}</div>
+            <div style="display:inline-flex;align-items:center;gap:6px;margin-top:11px;padding:5px 14px 6px;border-radius:14px;border:2px solid {{ dt.statusColor }};">
+              <span style="width:9px;height:9px;border-radius:50%;background:{{ dt.statusColor }};"></span>
+              <span style="font-size:14px;font-weight:700;color:{{ dt.statusColor }};">{{ dt.statusLabel }}</span>
+            </div>
+          </div>
+
+          <!-- bond -->
+          <div style="margin:22px 20px 0;display:flex;gap:11px;">
+            <div style="flex:1;border:2px solid var(--ink);border-radius:18px;padding:13px 14px;background:var(--faint);">
+              <div style="font-size:12px;color:var(--soft);font-weight:600;">함께한 지</div>
+              <div style="font-family:'Caveat',cursive;font-size:32px;font-weight:700;line-height:1;margin-top:3px;">{{ dt.bondDays }}<span style="font-size:18px;"> 일</span></div>
+              <div style="font-size:11.5px;color:var(--soft);margin-top:4px;">{{ dt.registeredText }} 들임</div>
+            </div>
+            <div style="flex:1;border:2px solid var(--ink);border-radius:18px;padding:13px 14px;">
+              <div style="font-size:12px;color:var(--soft);font-weight:600;">마지막 물주기</div>
+              <div style="font-family:'Caveat',cursive;font-size:32px;font-weight:700;line-height:1;margin-top:3px;">{{ dt.daysSince }}<span style="font-size:18px;"> 일 전</span></div>
+              <div style="font-size:11.5px;color:{{ dt.dueCol }};margin-top:4px;font-weight:700;">{{ dt.dueText }}</div>
+            </div>
+          </div>
+
+          <!-- care info -->
+          <div style="margin:18px 20px 0;">
+            <div style="font-family:'Caveat',cursive;font-size:24px;font-weight:700;margin-bottom:8px;">이 아이가 좋아하는 것</div>
+            <div style="border:2px solid var(--ink);border-radius:18px;overflow:hidden;">
+              <sc-for list="{{ dt.careRows }}" as="r" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:13px;padding:12px 15px;border-bottom:{{ r.border }};">
+                  <div style="width:26px;height:26px;flex:none;color:var(--ink);" dangerouslySetInnerHTML="{{ r.icon }}"></div>
+                  <div style="font-size:12.5px;color:var(--soft);width:78px;flex:none;">{{ r.label }}</div>
+                  <div style="font-size:14.5px;font-weight:600;flex:1;">{{ r.value }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <!-- history -->
+          <div style="margin:20px 20px 0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+              <div style="font-family:'Caveat',cursive;font-size:24px;font-weight:700;">물주기 일기</div>
+              <div style="display:flex;border:2px solid var(--ink);border-radius:12px;overflow:hidden;font-size:12.5px;font-weight:700;">
+                <div onClick="{{ dt.showList }}" style="padding:5px 12px;cursor:pointer;background:{{ dt.listBg }};color:{{ dt.listCol }};">목록</div>
+                <div onClick="{{ dt.showCal }}" style="padding:5px 12px;cursor:pointer;background:{{ dt.calBg }};color:{{ dt.calCol }};border-left:2px solid var(--ink);">달력</div>
+              </div>
+            </div>
+
+            <sc-if value="{{ dt.isListView }}" hint-placeholder-val="{{ true }}">
+              <div>
+                <sc-for list="{{ dt.history }}" as="h" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:center;gap:13px;padding:10px 4px;border-bottom:1.5px dashed var(--line);">
+                    <span style="width:13px;height:13px;border-radius:50%;background:{{ h.color }};flex:none;"></span>
+                    <div style="flex:1;">
+                      <div style="font-size:14.5px;font-weight:600;">{{ h.dateText }}</div>
+                      <div style="font-size:11.5px;color:var(--soft);">{{ h.gapText }}</div>
+                    </div>
+                    <div style="font-size:12px;font-weight:700;color:{{ h.color }};">{{ h.tag }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ dt.isCalView }}" hint-placeholder-val="{{ false }}">
+              <div style="border:2px solid var(--ink);border-radius:16px;padding:10px 8px;">
+                <div style="display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:2px;">
+                  <sc-for list="{{ weekdays }}" as="w" hint-placeholder-count="7">
+                    <div style="text-align:center;font-size:10.5px;font-weight:700;color:{{ w.col }};">{{ w.label }}</div>
+                  </sc-for>
+                </div>
+                <sc-for list="{{ dt.miniWeeks }}" as="week" hint-placeholder-count="6">
+                  <div style="display:grid;grid-template-columns:repeat(7,1fr);">
+                    <sc-for list="{{ week }}" as="d" hint-placeholder-count="7">
+                      <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;position:relative;">
+                        <sc-if value="{{ d.dot }}" hint-placeholder-val="{{ false }}">
+                          <span style="position:absolute;width:22px;height:22px;border-radius:50%;background:{{ d.dotCol }};"></span>
+                        </sc-if>
+                        <span style="font-size:11px;font-weight:600;color:{{ d.numCol }};z-index:1;">{{ d.day }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ============ ADD ============ -->
+      <sc-if value="{{ isAdd }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:54px 22px 60px;">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+            <div onClick="{{ goBack }}" style="width:38px;height:38px;border:2px solid var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;flex:none;">‹</div>
+            <div style="font-family:'Caveat',cursive;font-size:34px;font-weight:700;line-height:1;">식물 들이기</div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:10px;border:2px solid var(--ink);border-radius:16px;padding:11px 15px;margin-bottom:8px;">
+            <div style="width:20px;height:20px;flex:none;color:var(--soft);" dangerouslySetInnerHTML="{{ searchDoodle }}"></div>
+            <input value="{{ addQuery }}" onInput="{{ onAddInput }}" placeholder="식물 이름을 검색해 보세요" style="border:none;outline:none;background:transparent;font-family:'Shantell Sans',sans-serif;font-size:16px;font-weight:500;color:var(--ink);width:100%;" />
+          </div>
+          <div style="font-size:12.5px;color:var(--soft);margin-bottom:14px;padding-left:4px;">{{ addHint }}</div>
+
+          <sc-for list="{{ addResults }}" as="s" hint-placeholder-count="6">
+            <div onClick="{{ s.onSelect }}" style="display:flex;align-items:center;gap:13px;padding:11px 13px;margin-bottom:10px;border:2px solid var(--ink);border-radius:18px 16px 19px 17px;cursor:pointer;">
+              <div style="width:48px;height:48px;flex:none;color:var(--ink);" dangerouslySetInnerHTML="{{ s.doodleHtml }}"></div>
+              <div style="flex:1;">
+                <div style="font-size:16px;font-weight:700;">{{ s.name }}</div>
+                <div style="font-size:12px;color:var(--soft);font-style:italic;">{{ s.sci }}</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:12px;color:var(--soft);">물주기</div>
+                <div style="font-size:13.5px;font-weight:700;">{{ s.intervalText }}</div>
+              </div>
+            </div>
+          </sc-for>
+
+          <sc-if value="{{ noResults }}" hint-placeholder-val="{{ false }}">
+            <div style="text-align:center;color:var(--soft);padding:30px 0;font-size:14px;">아직 우리 정원에 없는 친구예요 🌱<br/>다른 이름으로 찾아볼까요?</div>
+          </sc-if>
+        </div>
+
+        <!-- species preview sheet -->
+        <sc-if value="{{ addSel }}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{ closeAddSel }}" style="position:absolute;inset:0;background:rgba(35,31,24,.32);z-index:50;display:flex;align-items:flex-end;">
+            <div style="width:100%;background:var(--paper);border-radius:30px 30px 0 0;border:2.5px solid var(--ink);border-bottom:none;padding:14px 22px 30px;animation:popIn .26s ease;" onClick="{{ stop }}">
+              <div style="width:44px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 12px;"></div>
+              <div style="display:flex;align-items:center;gap:14px;">
+                <div style="width:74px;height:74px;flex:none;color:var(--ink);" dangerouslySetInnerHTML="{{ addSel.doodleHtml }}"></div>
+                <div>
+                  <div style="font-family:'Caveat',cursive;font-size:34px;font-weight:700;line-height:1;">{{ addSel.name }}</div>
+                  <div style="font-size:13px;color:var(--soft);font-style:italic;margin-top:2px;">{{ addSel.sci }}</div>
+                </div>
+              </div>
+              <div style="font-size:14px;line-height:1.55;color:var(--soft);margin:14px 2px;">{{ addSel.desc }}</div>
+              <div style="border:2px solid var(--ink);border-radius:18px;overflow:hidden;margin-bottom:18px;">
+                <sc-for list="{{ addSel.careRows }}" as="r" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:center;gap:13px;padding:11px 15px;border-bottom:{{ r.border }};">
+                    <div style="width:24px;height:24px;flex:none;color:var(--ink);" dangerouslySetInnerHTML="{{ r.icon }}"></div>
+                    <div style="font-size:12.5px;color:var(--soft);width:78px;flex:none;">{{ r.label }}</div>
+                    <div style="font-size:14.5px;font-weight:600;flex:1;">{{ r.value }}</div>
+                  </div>
+                </sc-for>
+              </div>
+              <div onClick="{{ doAdd }}" style="text-align:center;padding:15px;background:var(--ink);color:var(--paper);border-radius:18px;font-size:17px;font-weight:700;cursor:pointer;">
+                내 식물로 들이기
+              </div>
+            </div>
+          </div>
+        </sc-if>
+      </sc-if>
+
+    </div>
+
+    <!-- bottom nav -->
+    <sc-if value="{{ showNav }}" hint-placeholder-val="{{ true }}">
+      <div style="position:absolute;bottom:0;left:0;right:0;height:84px;background:var(--paper);border-top:2px solid var(--ink);display:flex;align-items:center;justify-content:space-around;padding:0 28px 14px;z-index:30;">
+        <div onClick="{{ goHome }}" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;color:{{ homeNavCol }};">
+          <div style="width:26px;height:26px;" dangerouslySetInnerHTML="{{ homeIcon }}"></div>
+          <span style="font-size:11px;font-weight:700;">홈</span>
+        </div>
+        <div onClick="{{ goAdd }}" style="width:54px;height:54px;border:2.5px solid var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--ink);color:var(--paper);font-size:28px;cursor:pointer;margin-bottom:14px;box-shadow:3px 3px 0 0 var(--line);">＋</div>
+        <div onClick="{{ goCalendar }}" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;color:{{ calNavCol }};">
+          <div style="width:26px;height:26px;" dangerouslySetInnerHTML="{{ calIcon }}"></div>
+          <span style="font-size:11px;font-weight:700;">달력</span>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- toast -->
+    <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;bottom:104px;left:50%;transform:translateX(-50%);z-index:60;background:var(--ink);color:var(--paper);padding:11px 20px;border-radius:16px;font-size:14px;font-weight:700;white-space:nowrap;animation:toastIn .3s ease;display:flex;align-items:center;gap:8px;">
+        <span style="width:15px;height:17px;display:inline-block;" dangerouslySetInnerHTML="{{ dropDoodleLight }}"></span>
+        {{ toast }}
+      </div>
+    </sc-if>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const T = '2026-06-20';
+    this.TODAY = T;
+    this.state = {
+      screen: 'home',
+      selId: null,
+      cal: { y: 2026, m: 5 },
+      calPlants: ['monstera','stuki','yaja','succ','olive'],
+      detailView: 'list',
+      addQuery: '',
+      addSelId: null,
+      toast: null,
+      plants: [
+        { id:'monstera', name:'몬스테라', sci:'Monstera deliciosa', type:'monstera', color:'#5E8C57', interval:7,
+          registered:'2025-03-12', light:'밝은 간접광', water:'겉흙 마르면', temp:'18–27°C', amount:'한 컵 (250ml)',
+          history:['2026-05-21','2026-05-28','2026-06-04','2026-06-11','2026-06-18'] },
+        { id:'stuki', name:'스투키', sci:'Sansevieria cylindrica', type:'snake', color:'#5B7F91', interval:14,
+          registered:'2024-11-02', light:'반양지·음지 OK', water:'흙 완전히 마르면', temp:'16–30°C', amount:'반 컵 (120ml)',
+          history:['2026-05-11','2026-05-25','2026-06-08'] },
+        { id:'yaja', name:'테이블야자', sci:'Chamaedorea elegans', type:'palm', color:'#C2873B', interval:5,
+          registered:'2025-09-30', light:'밝은 간접광', water:'겉흙 마르기 전', temp:'18–24°C', amount:'한 컵 (250ml)',
+          history:['2026-05-26','2026-06-01','2026-06-06','2026-06-13'] },
+        { id:'succ', name:'다육이', sci:'Echeveria elegans', type:'succulent', color:'#A0698C', interval:21,
+          registered:'2025-06-18', light:'직사광·양지', water:'흙 바싹 마르면', temp:'10–28°C', amount:'조금 (60ml)',
+          history:['2026-05-04','2026-05-25','2026-06-15'] },
+        { id:'olive', name:'올리브나무', sci:'Olea europaea', type:'olive', color:'#87873F', interval:9,
+          registered:'2025-04-21', light:'직사광 좋아함', water:'겉흙 마르면', temp:'15–28°C', amount:'한 컵 반 (350ml)',
+          history:['2026-05-16','2026-05-25','2026-06-03','2026-06-12'] },
+      ],
+    };
+    this.speciesDB = [
+      { id:'sp_mon', name:'몬스테라', sci:'Monstera deliciosa', type:'monstera', color:'#5E8C57', interval:7, light:'밝은 간접광', water:'겉흙 마르면', temp:'18–27°C', desc:'잎의 갈라진 구멍이 매력적인 식집사 입문 1순위. 통풍을 좋아하고 과습에 약해요.' },
+      { id:'sp_stuki', name:'스투키', sci:'Sansevieria cylindrica', type:'snake', color:'#5B7F91', interval:14, light:'반양지·음지 OK', water:'흙 완전히 마르면', temp:'16–30°C', desc:'물을 자주 안 줘도 잘 크는 게으른 식집사의 친구. 공기정화 능력도 좋아요.' },
+      { id:'sp_yaja', name:'테이블야자', sci:'Chamaedorea elegans', type:'palm', color:'#C2873B', interval:5, light:'밝은 간접광', water:'겉흙 마르기 전', temp:'18–24°C', desc:'잎이 부채처럼 퍼지는 작은 야자. 건조에 약해 흙이 촉촉한 걸 좋아해요.' },
+      { id:'sp_succ', name:'다육이', sci:'Echeveria elegans', type:'succulent', color:'#A0698C', interval:21, light:'직사광·양지', water:'흙 바싹 마르면', temp:'10–28°C', desc:'통통한 잎에 물을 저장하는 작은 장미. 햇빛은 듬뿍, 물은 아주 가끔.' },
+      { id:'sp_olive', name:'올리브나무', sci:'Olea europaea', type:'olive', color:'#87873F', interval:9, light:'직사광 좋아함', water:'겉흙 마르면', temp:'15–28°C', desc:'은빛 잎이 살랑이는 지중해 감성. 햇빛을 충분히 받아야 건강해요.' },
+      { id:'sp_san', name:'산세베리아', sci:'Dracaena trifasciata', type:'snake', color:'#5B7F91', interval:14, light:'반양지·음지 OK', water:'흙 완전히 마르면', temp:'16–30°C', desc:'세로로 길게 뻗는 단단한 잎. 초보자도 좀처럼 죽이기 어려운 효자예요.' },
+      { id:'sp_spathi', name:'스파티필름', sci:'Spathiphyllum', type:'monstera', color:'#5E8C57', interval:4, light:'반음지', water:'겉흙 마르면 바로', temp:'18–26°C', desc:'목마르면 잎을 축 늘어뜨려 신호를 보내는 솔직한 친구. 물을 좋아해요.' },
+      { id:'sp_haeng', name:'행운목', sci:'Dracaena fragrans', type:'palm', color:'#C2873B', interval:10, light:'밝은 간접광', water:'겉흙 마르면', temp:'18–25°C', desc:'곧게 자라는 굵은 줄기가 듬직한 행운의 나무. 관리가 수월해요.' },
+      { id:'sp_yulma', name:'율마', sci:'Cupressus macrocarpa', type:'olive', color:'#87873F', interval:4, light:'직사광 좋아함', water:'겉흙 마르기 전', temp:'15–25°C', desc:'레몬향이 나는 보송한 침엽수. 건조에 약하니 물을 잘 챙겨주세요.' },
+      { id:'sp_gomu', name:'고무나무', sci:'Ficus elastica', type:'monstera', color:'#5E8C57', interval:8, light:'밝은 간접광', water:'겉흙 마르면', temp:'16–28°C', desc:'두껍고 윤기나는 잎이 인테리어로 인기. 튼튼하고 키우기 쉬워요.' },
+    ];
+  }
+
+  // ---------- date utils ----------
+  parse(s){ const a=s.split('-'); return new Date(+a[0], +a[1]-1, +a[2]); }
+  iso(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  addDays(s,n){ const d=this.parse(s); d.setDate(d.getDate()+n); return this.iso(d); }
+  diff(a,b){ return Math.round((this.parse(b)-this.parse(a))/86400000); }
+  fmt(s){ const d=this.parse(s); return (d.getMonth()+1)+'월 '+d.getDate()+'일'; }
+
+  status(p){
+    const last = p.history[p.history.length-1];
+    const since = this.diff(last, this.TODAY);
+    const r = since / p.interval;
+    if (r < 0.7) return { key:'healthy', label:'촉촉해요', color:'#5E8C57', since, last };
+    if (r < 1)   return { key:'thirsty', label:'곧 목말라요', color:'#C99A3C', since, last };
+    return { key:'urgent', label:'물 주세요!', color:'#CC6B52', since, last };
+  }
+  dueInfo(p){
+    const last = p.history[p.history.length-1];
+    const due = this.addDays(last, p.interval);
+    const d = this.diff(this.TODAY, due);
+    let text, col;
+    if (d < 0){ text = (-d)+'일 지났어요'; col='#CC6B52'; }
+    else if (d===0){ text='오늘이 그날!'; col='#CC6B52'; }
+    else if (d<=2){ text=d+'일 뒤'; col='#C99A3C'; }
+    else { text=d+'일 뒤'; col='#857B69'; }
+    return { due, d, text, col };
+  }
+
+  // ---------- doodles (line-art SVG) ----------
+  svg(inner){ return '<svg viewBox="0 0 120 120" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">'+inner+'</svg>'; }
+  pot(){ return '<path d="M43 80 Q42 78 44 78 L76 78 Q78 78 77 80 L72 104 Q71 108 67 108 L53 108 Q49 108 48 104 Z"/><path d="M45 83 Q60 88 75 83"/>'; }
+  foliage(type){
+    if(type==='monstera') return '<path d="M59 80 C45 75 33 61 35 47 C36 40 44 37 51 43 C60 50 63 67 59 80 Z"/><path d="M56 76 C48 65 44 56 45 47"/><path d="M48 60 C44 60 41 58 39 55"/><path d="M61 80 C75 75 87 61 85 47 C84 40 76 37 69 43 C60 50 57 67 61 80 Z"/><path d="M64 76 C72 65 76 56 75 47"/><path d="M72 60 C76 60 79 58 81 55"/>';
+    if(type==='snake') return '<path d="M55 80 C53 60 51 44 54 30 C55 26 57 26 58 30 C60 46 59 62 59 80"/><path d="M64 80 C64 58 66 42 71 31 C73 27 75 28 74 33 C71 49 68 64 68 80"/><path d="M47 80 C46 62 43 50 39 41 C37 37 39 36 41 39 C47 51 50 65 51 80"/>';
+    if(type==='succulent') return '<path d="M60 78 C56 71 56 63 60 56 C64 63 64 71 60 78 Z"/><path d="M60 78 C53 75 49 69 49 62 C57 64 61 70 60 78 Z"/><path d="M60 78 C67 75 71 69 71 62 C63 64 59 70 60 78 Z"/><path d="M60 78 C52 78 46 74 44 68 C52 68 58 72 60 78 Z"/><path d="M60 78 C68 78 74 74 76 68 C68 68 62 72 60 78 Z"/>';
+    if(type==='palm') return '<path d="M58 80 C56 60 54 47 50 35"/><path d="M50 35 C44 36 39 41 36 47"/><path d="M50 35 C56 35 62 37 67 41"/><path d="M52 46 C46 48 42 52 39 58"/><path d="M52 46 C58 47 63 49 67 53"/><path d="M55 57 C50 59 46 62 44 67"/><path d="M55 57 C60 58 64 60 67 64"/>';
+    if(type==='olive') return '<path d="M58 80 C56 64 58 50 66 40 C71 34 78 32 84 33"/><path d="M62 52 C58 51 56 48 57 45 C61 46 63 49 62 52 Z"/><path d="M67 44 C65 40 66 36 69 34 C71 38 70 42 67 44 Z"/><path d="M74 38 C73 34 75 31 78 31 C79 35 77 38 74 38 Z"/><path d="M59 62 C55 62 52 60 52 56 C56 56 59 58 59 62 Z"/><path d="M65 58 C62 55 62 51 65 49 C67 52 67 56 65 58 Z"/>';
+    return '';
+  }
+  doodle(type){ return this.svg(this.foliage(type)+this.pot()); }
+  html(s){ return { __html: s }; }
+
+  careIcon(kind){
+    const w='<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">';
+    if(kind==='light') return w+'<circle cx="12" cy="12" r="4.5"/><path d="M12 3.5v2.5M12 18v2.5M3.5 12h2.5M18 12h2.5M6 6l1.7 1.7M18 18l-1.7-1.7M18 6l-1.7 1.7M6 18l1.7-1.7"/></svg>';
+    if(kind==='water') return w+'<path d="M12 4.5 C12 4.5 6.5 11 6.5 15 a5.5 5.5 0 0 0 11 0 C17.5 11 12 4.5 12 4.5 Z"/><path d="M9.5 15 a2.5 2.5 0 0 0 2.5 2.5"/></svg>';
+    if(kind==='temp') return w+'<path d="M13.5 13.6V6 a1.8 1.8 0 0 0-3.6 0 v7.6 a3.3 3.3 0 1 0 3.6 0 Z"/><path d="M11.7 14.5 v-4"/></svg>';
+    if(kind==='cycle') return w+'<path d="M19 12 a7 7 0 1 1-2.4-5.3"/><path d="M17 3.5 v3.5 h-3.5"/></svg>';
+    if(kind==='amount') return w+'<path d="M7 9 h10 l-1.2 9 a2 2 0 0 1-2 1.8 h-3.6 a2 2 0 0 1-2-1.8 Z"/><path d="M9 9 V6.5 a3 3 0 0 1 6 0 V9"/></svg>';
+    return '';
+  }
+
+  hexa(hex,a){ const h=hex.replace('#',''); const r=parseInt(h.substr(0,2),16),g=parseInt(h.substr(2,2),16),b=parseInt(h.substr(4,2),16); return 'rgba('+r+','+g+','+b+','+a+')'; }
+
+  // ---------- actions ----------
+  go(s){ this.setState({ screen:s }); }
+  openDetail(id){ this.setState({ screen:'detail', selId:id, detailView:'list' }); }
+  goBack(){ this.setState({ screen: (this.state.lastMain||'home'), addSelId:null, addQuery:'' }); }
+  showToast(msg){ this.setState({ toast:msg }); clearTimeout(this._t); this._t=setTimeout(()=>this.setState({toast:null}), 1900); }
+  water(id){
+    const plants = this.state.plants.map(p=>{
+      if(p.id!==id) return p;
+      if(p.history[p.history.length-1]===this.TODAY) return p;
+      return { ...p, history:[...p.history, this.TODAY] };
+    });
+    const p = plants.find(x=>x.id===id);
+    this.setState({ plants }); this.showToast(p.name+' 물 주기 완료!');
+  }
+  toggleCal(id){
+    const has = this.state.calPlants.includes(id);
+    let next = has ? this.state.calPlants.filter(x=>x!==id) : [...this.state.calPlants, id];
+    this.setState({ calPlants: next });
+  }
+  shiftMonth(n){ let {y,m}=this.state.cal; m+=n; if(m<0){m=11;y--;} if(m>11){m=0;y++;} this.setState({cal:{y,m}}); }
+  addPlant(){
+    const sp = this.speciesDB.find(s=>s.id===this.state.addSelId); if(!sp) return;
+    const np = { id:'u_'+Date.now(), name:sp.name, sci:sp.sci, type:sp.type, color:sp.color, interval:sp.interval,
+      registered:this.TODAY, light:sp.light, water:sp.water, temp:sp.temp, amount:'한 컵 (250ml)', history:[this.TODAY] };
+    this.setState({ plants:[...this.state.plants, np], calPlants:[...this.state.calPlants, np.id], screen:'home', addSelId:null, addQuery:'' });
+    this.showToast(sp.name+' 가족이 되었어요!');
+  }
+
+  // ---------- calendar build ----------
+  buildWeeks(events, selectedPlants){
+    const {y,m}=this.state.cal;
+    const first=new Date(y,m,1); const startDow=first.getDay();
+    const daysInMonth=new Date(y,m+1,0).getDate();
+    const cells=[];
+    for(let i=0;i<startDow;i++){ const d=new Date(y,m,1-(startDow-i)); cells.push(this.cell(d,true,events,selectedPlants)); }
+    for(let dn=1;dn<=daysInMonth;dn++){ cells.push(this.cell(new Date(y,m,dn),false,events,selectedPlants)); }
+    while(cells.length%7!==0){ const last=cells[cells.length-1]; const d=this.parse(last.iso); d.setDate(d.getDate()+1); cells.push(this.cell(d,true,events,selectedPlants)); }
+    const weeks=[]; for(let i=0;i<cells.length;i+=7) weeks.push(cells.slice(i,i+7));
+    return weeks;
+  }
+  cell(dateObj, dim, events, selected){
+    const iso=this.iso(dateObj); const day=dateObj.getDate(); const dow=dateObj.getDay();
+    const isToday=iso===this.TODAY;
+    const pastDots=[]; events.forEach(e=>{ if(e.iso===iso) pastDots.push(e.color); });
+    let bandBg='transparent', isCenter=false, centerCol='', futureDots=[];
+    if(selected.length===1){
+      const p=selected[0]; const last=p.history[p.history.length-1]; const center=this.addDays(last,p.interval);
+      const lo=this.addDays(center,-2), hi=this.addDays(center,2);
+      if(this.diff(lo,iso)>=0 && this.diff(iso,hi)>=0 && this.diff(this.TODAY,iso)>0){ bandBg=this.hexa(p.color,0.16); }
+      if(iso===center){ isCenter=true; centerCol=p.color; }
+    } else {
+      selected.forEach(p=>{ const last=p.history[p.history.length-1]; const center=this.addDays(last,p.interval); if(iso===center && this.diff(this.TODAY,iso)>0) futureDots.push(p.color); });
+    }
+    let numCol = dim ? '#BCC9AE' : (dow===0 ? '#CC6B52' : 'var(--ink)');
+    if(isToday) numCol='var(--ink)';
+    return { day, iso, isToday, pastDots:pastDots.slice(0,4), futureDots:futureDots.slice(0,4), bandBg, isCenter, centerCol, numCol };
+  }
+  eventsFor(plants){
+    const out=[];
+    plants.forEach(p=>{ p.history.forEach((h,i)=>{ let color=p.color; out.push({iso:h,color,plant:p.id}); }); });
+    return out;
+  }
+
+  renderVals(){
+    const S=this.state; const screen=S.screen;
+    const isMain = screen==='home'||screen==='calendar';
+    if(isMain && S.lastMain!==screen){ /* track */ }
+    const lastMain = isMain ? screen : (S.lastMain||'home');
+    if(this.state.lastMain!==lastMain) this.state.lastMain=lastMain;
+
+    const weekdays=['일','월','화','수','목','금','토'].map((l,i)=>({label:l, col: i===0?'#CC6B52':'var(--soft)'}));
+
+    // ---- home ----
+    const homePlants = S.plants.map(p=>{
+      const st=this.status(p);
+      return { ...p, doodleHtml:this.html(this.doodle(p.type)), statusColor:st.color, statusLabel:st.label,
+        lastText:'마지막 물주기 '+st.since+'일 전 · '+this.fmt(st.last),
+        onOpen:()=>this.openDetail(p.id), onWater:(e)=>{ e.stopPropagation(); this.water(p.id); } };
+    });
+    const need = S.plants.filter(p=>{ const k=this.status(p).key; return k!=='healthy'; }).length;
+    const summaryText = need>0 ? (need+'개의 식물이 물을 기다려요') : '모두 촉촉해요';
+    const summarySub = need>0 ? '오늘 챙겨주면 더 건강해질 거예요' : '오늘은 푹 쉬어도 좋아요';
+    const summaryDoodle = this.html(this.svg(need>0
+      ? '<path d="M60 30 C60 30 44 50 44 64 a16 16 0 0 0 32 0 C76 50 60 30 60 30 Z"/><path d="M52 64 a8 8 0 0 0 8 8"/>'
+      : '<path d="M40 60 l14 14 l28 -30"/><circle cx="60" cy="60" r="34"/>'));
+
+    // ---- detail ----
+    const dp=S.plants.find(p=>p.id===S.selId);
+    let dt=null;
+    if(dp){
+      const st=this.status(dp); const du=this.dueInfo(dp);
+      const hist=[...dp.history].reverse().map((h,i,arr)=>{
+        const prevIso = dp.history[dp.history.length-2-i];
+        let gap=null, color='#5E8C57', tag='첫 물주기', gapText='기록의 시작';
+        if(prevIso){ gap=this.diff(prevIso,h); if(gap<=dp.interval*1.15){color='#5E8C57';tag='제때';} else if(gap<=dp.interval*1.5){color='#C99A3C';tag='조금 늦음';} else {color='#CC6B52';tag='많이 늦음';} gapText=gap+'일 만에 줬어요'; }
+        return { dateText:this.fmt(h)+' ('+'일월화수목금토'[this.parse(h).getDay()]+')', color, tag, gapText };
+      });
+      // mini calendar of this plant's history (current cal month)
+      const ev=this.eventsFor([dp]);
+      const miniWeeks=this.buildMini(dp);
+      dt={ ...dp, doodleHtml:this.html(this.doodle(dp.type)), statusColor:st.color, statusLabel:st.label,
+        daysSince:st.since, dueText:du.text, dueCol:du.col,
+        bondDays:this.diff(dp.registered,this.TODAY), registeredText:this.parse(dp.registered).getFullYear()+'.'+String(this.parse(dp.registered).getMonth()+1).padStart(2,'0'),
+        careRows:[
+          {icon:this.html(this.careIcon('light')), label:'빛', value:dp.light, border:'1.5px solid var(--line)'},
+          {icon:this.html(this.careIcon('water')), label:'물 줄 때', value:dp.water, border:'1.5px solid var(--line)'},
+          {icon:this.html(this.careIcon('temp')), label:'온도', value:dp.temp, border:'1.5px solid var(--line)'},
+          {icon:this.html(this.careIcon('cycle')), label:'물주기', value:dp.interval+'일마다', border:'1.5px solid var(--line)'},
+          {icon:this.html(this.careIcon('amount')), label:'물 양', value:dp.amount, border:'none'},
+        ],
+        history:hist, miniWeeks,
+        isListView:S.detailView==='list', isCalView:S.detailView==='cal',
+        listBg:S.detailView==='list'?'var(--ink)':'transparent', listCol:S.detailView==='list'?'var(--paper)':'var(--ink)',
+        calBg:S.detailView==='cal'?'var(--ink)':'transparent', calCol:S.detailView==='cal'?'var(--paper)':'var(--ink)',
+        showList:()=>this.setState({detailView:'list'}), showCal:()=>this.setState({detailView:'cal'}),
+        onWater:()=>this.water(dp.id) };
+    }
+
+    // ---- calendar ----
+    const selPlants=S.plants.filter(p=>S.calPlants.includes(p.id));
+    const events=this.eventsFor(selPlants);
+    const weeks=this.buildWeeks(events, selPlants);
+    const monthNames=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+    const monthLabel=S.cal.y+'년 '+monthNames[S.cal.m];
+    const chips=S.plants.map(p=>{ const on=S.calPlants.includes(p.id);
+      return { name:p.name, color:p.color, onToggle:()=>this.toggleCal(p.id),
+        borderCol:on?p.color:'var(--line)', bg:on?this.hexa(p.color,0.12):'transparent',
+        textCol:on?'var(--ink)':'var(--soft)', dotCol:on?p.color:'transparent' }; });
+    const upcoming=selPlants.map(p=>{ const du=this.dueInfo(p); return { p, ...du, color:p.color, name:p.name }; })
+      .sort((a,b)=>this.parse(a.due)-this.parse(b.due))
+      .map(u=>({ name:u.name, color:u.color, dueText:u.text, dueCol:u.col,
+        rangeText:'추천 구간 '+this.fmt(this.addDays(u.due,-2))+' ~ '+this.fmt(this.addDays(u.due,2)),
+        onOpen:()=>this.openDetail(u.p.id) }));
+
+    // ---- add ----
+    const q=S.addQuery.trim();
+    const addResults=this.speciesDB.filter(s=>!q || s.name.includes(q) || s.sci.toLowerCase().includes(q.toLowerCase()))
+      .map(s=>({ ...s, doodleHtml:this.html(this.doodle(s.type)), intervalText:s.interval+'일마다', onSelect:()=>this.setState({addSelId:s.id}) }));
+    const noResults = q && addResults.length===0;
+    const addHint = q ? (addResults.length+'개의 친구를 찾았어요') : '예) 몬스테라, 스투키, 다육이 …';
+    let addSel=null;
+    const sp=this.speciesDB.find(s=>s.id===S.addSelId);
+    if(sp){ addSel={ ...sp, doodleHtml:this.html(this.doodle(sp.type)),
+      careRows:[
+        {icon:this.html(this.careIcon('light')), label:'빛', value:sp.light, border:'1.5px solid var(--line)'},
+        {icon:this.html(this.careIcon('water')), label:'물 줄 때', value:sp.water, border:'1.5px solid var(--line)'},
+        {icon:this.html(this.careIcon('temp')), label:'온도', value:sp.temp, border:'1.5px solid var(--line)'},
+        {icon:this.html(this.careIcon('cycle')), label:'물주기', value:sp.interval+'일마다', border:'none'},
+      ] }; }
+
+    return {
+      isHome:screen==='home', isCalendar:screen==='calendar', isDetail:screen==='detail', isAdd:screen==='add',
+      showNav:isMain, todayLabel:'2026년 6월 20일 토요일',
+      homePlants, summaryText, summarySub, summaryDoodle,
+      dropDoodle:this.html(this.svg('<path d="M60 26 C60 26 38 52 38 72 a22 22 0 0 0 44 0 C82 52 60 26 60 26 Z"/><path d="M50 72 a10 10 0 0 0 10 10"/>')),
+      dropDoodleLight:this.html('<svg viewBox="0 0 120 120" width="100%" height="100%" fill="none" stroke="#F8FFF5" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><path d="M60 26 C60 26 38 52 38 72 a22 22 0 0 0 44 0 C82 52 60 26 60 26 Z"/><path d="M50 72 a10 10 0 0 0 10 10"/></svg>'),
+      goAdd:()=>this.go('add'), goHome:()=>this.go('home'), goCalendar:()=>this.go('calendar'), goBack:()=>this.goBack(),
+      weekdays, monthLabel, weeks, chips, upcoming, prevMonth:()=>this.shiftMonth(-1), nextMonth:()=>this.shiftMonth(1),
+      dt,
+      addQuery:S.addQuery, onAddInput:(e)=>this.setState({addQuery:e.target.value}), addResults, noResults, addHint, addSel,
+      closeAddSel:()=>this.setState({addSelId:null}), stop:(e)=>e.stopPropagation(), doAdd:()=>this.addPlant(),
+      searchDoodle:this.html('<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 L21 21"/></svg>'),
+      homeNavCol:screen==='home'?'var(--ink)':'var(--soft)', calNavCol:screen==='calendar'?'var(--ink)':'var(--soft)',
+      homeIcon:this.html('<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 L12 4.5 L20 11.5"/><path d="M6 10.5 V20 h12 V10.5"/><path d="M10 20 v-5 h4 v5"/></svg>'),
+      calIcon:this.html('<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="15" rx="2.5"/><path d="M4 9.5 h16 M8.5 3.5 v3 M15.5 3.5 v3"/><circle cx="9" cy="13.5" r="1"/><circle cx="14" cy="13.5" r="1"/></svg>'),
+      toast:S.toast,
+    };
+  }
+
+  buildMini(dp){
+    const {y,m}=this.state.cal;
+    const first=new Date(y,m,1); const startDow=first.getDay();
+    const daysInMonth=new Date(y,m+1,0).getDate();
+    const set={}; dp.history.forEach((h,i)=>{ const pIso=dp.history[i-1]; let col='#5E8C57'; if(pIso){const g=this.diff(pIso,h); col= g<=dp.interval*1.15?'#5E8C57': g<=dp.interval*1.5?'#C99A3C':'#CC6B52';} set[h]=col; });
+    const cells=[];
+    const mk=(d,dim)=>{ const iso=this.iso(d); const dot=!!set[iso]; return { day:d.getDate(), dot, dotCol:set[iso]||'transparent', numCol: dot?'#F8FFF5':(dim?'#BCC9AE':'var(--ink)') }; };
+    for(let i=0;i<startDow;i++){ cells.push(mk(new Date(y,m,1-(startDow-i)),true)); }
+    for(let dn=1;dn<=daysInMonth;dn++){ cells.push(mk(new Date(y,m,dn),false)); }
+    while(cells.length%7!==0){ const d=new Date(y,m,daysInMonth+(cells.length-startDow-daysInMonth)+1); cells.push(mk(d,true)); }
+    const weeks=[]; for(let i=0;i<cells.length;i+=7) weeks.push(cells.slice(i,i+7));
+    return weeks;
+  }
+}
+</script>
+</body>
+</html>

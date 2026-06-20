@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="width:max-content; min-width:100%; min-height:100vh; box-sizing:border-box; padding:48px; background:#e7e5df; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+
+  <div style="max-width:560px;">
+    <div style="font:700 28px/1.2 'Helvetica Neue',Helvetica,Arial,sans-serif; color:#26261f;">손그림 스타일 로고</div>
+    <div style="font:400 14px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace; color:#6a6a5f; margin-top:8px;">같은 plant 마크를 흔들리는 펜선으로. 02–04는 스티커 테두리(die-cut)를 더한 컬러 버전입니다.</div>
+  </div>
+
+  <div style="display:flex; gap:30px; align-items:flex-start; margin-top:32px;">
+
+    <!-- 01 — App icon, forest, no halo -->
+    <div style="flex:none; width:288px; display:flex; flex-direction:column; gap:14px;">
+      <div>
+        <div style="font:600 15px/1.3 'Helvetica Neue',Helvetica,Arial,sans-serif; color:#26261f;">01 · 앱 아이콘 (Forest)</div>
+        <div style="font:400 13px/1.5 ui-monospace,monospace; color:#7a7a6e; margin-top:3px;">기존 배지에 손그림 펜선만. 줄무늬 화분.</div>
+      </div>
+      <div style="background:#fff; border-radius:2px; box-shadow:0 1px 3px rgba(0,0,0,.08); padding:14px; display:flex; align-items:center; justify-content:center;">
+        <svg width="256" height="256" viewBox="0 0 600 600" style="display:block;">
+          <defs>
+            <filter id="rough1" x="-30%" y="-30%" width="160%" height="160%">
+              <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="2" seed="4" result="n"></feTurbulence>
+              <feDisplacementMap in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
+            </filter>
+          </defs>
+          <rect x="0" y="0" width="600" height="600" rx="132" fill="#364A35"></rect>
+          <g filter="url(#rough1)" fill="none" stroke="#F2EEE2" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,35) translate(210,560) scale(1.32) translate(-210,-560)">
+            <path d="M118 458 L302 458"></path>
+            <path d="M128 474 Q210 482 292 474"></path>
+            <path d="M140 464 L166 600"></path>
+            <path d="M280 464 L254 600"></path>
+            <path d="M172 478 L168 588"></path>
+            <path d="M210 480 L210 594"></path>
+            <path d="M248 478 L252 588"></path>
+            <path d="M211 456 C207 408 214 360 211 312 C210 290 211 272 210 254"></path>
+            <path d="M210 408 C257 399 287 367 289 325 C250 334 220 364 210 408 Z"></path>
+            <path d="M210 364 C163 355 133 323 131 281 C170 290 200 320 210 364 Z"></path>
+            <path d="M210 320 C257 311 287 279 289 237 C250 246 220 276 210 320 Z"></path>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 02 — Sticker, forest -->
+    <div style="flex:none; width:288px; display:flex; flex-direction:column; gap:14px;">
+      <div>
+        <div style="font:600 15px/1.3 'Helvetica Neue',Helvetica,Arial,sans-serif; color:#26261f;">02 · 스티커 (Forest)</div>
+        <div style="font:400 13px/1.5 ui-monospace,monospace; color:#7a7a6e; margin-top:3px;">크림 바탕 + 흰 테두리. 붙이는 스티커 느낌.</div>
+      </div>
+      <div style="background:#fff; border-radius:2px; box-shadow:0 1px 3px rgba(0,0,0,.08); padding:14px; display:flex; align-items:center; justify-content:center;">
+        <svg width="256" height="256" viewBox="0 0 600 600" style="display:block;">
+          <defs>
+            <filter id="rough2" x="-30%" y="-30%" width="160%" height="160%">
+              <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="2" seed="9" result="n"></feTurbulence>
+              <feDisplacementMap in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
+            </filter>
+            <filter id="halo2" x="-40%" y="-40%" width="180%" height="180%">
+              <feMorphology in="SourceAlpha" operator="dilate" radius="15" result="d"></feMorphology>
+              <feFlood flood-color="#ffffff" result="w"></feFlood>
+              <feComposite in="w" in2="d" operator="in" result="halo"></feComposite>
+              <feMerge><feMergeNode in="halo"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>
+            </filter>
+          </defs>
+          <rect x="0" y="0" width="600" height="600" rx="132" fill="#ECE7DB"></rect>
+          <g filter="url(#halo2)">
+            <g filter="url(#rough2)" fill="none" stroke="#33503B" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,35) translate(210,560) scale(1.32) translate(-210,-560)">
+              <path d="M118 458 L302 458"></path>
+              <path d="M128 474 Q210 482 292 474"></path>
+              <path d="M140 464 L166 600"></path>
+              <path d="M280 464 L254 600"></path>
+              <path d="M172 478 L168 588"></path>
+              <path d="M210 480 L210 594"></path>
+              <path d="M248 478 L252 588"></path>
+              <path d="M211 456 C207 408 214 360 211 312 C210 290 211 272 210 254"></path>
+              <path d="M210 408 C257 399 287 367 289 325 C250 334 220 364 210 408 Z"></path>
+              <path d="M210 364 C163 355 133 323 131 281 C170 290 200 320 210 364 Z"></path>
+              <path d="M210 320 C257 311 287 279 289 237 C250 246 220 276 210 320 Z"></path>
+            </g>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 03 — Sticker, teal -->
+    <div style="flex:none; width:288px; display:flex; flex-direction:column; gap:14px;">
+      <div>
+        <div style="font:600 15px/1.3 'Helvetica Neue',Helvetica,Arial,sans-serif; color:#26261f;">03 · 스티커 (Teal)</div>
+        <div style="font:400 13px/1.5 ui-monospace,monospace; color:#7a7a6e; margin-top:3px;">물을 연상시키는 청록 라인.</div>
+      </div>
+      <div style="background:#fff; border-radius:2px; box-shadow:0 1px 3px rgba(0,0,0,.08); padding:14px; display:flex; align-items:center; justify-content:center;">
+        <svg width="256" height="256" viewBox="0 0 600 600" style="display:block;">
+          <defs>
+            <filter id="rough3" x="-30%" y="-30%" width="160%" height="160%">
+              <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="2" seed="2" result="n"></feTurbulence>
+              <feDisplacementMap in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
+            </filter>
+            <filter id="halo3" x="-40%" y="-40%" width="180%" height="180%">
+              <feMorphology in="SourceAlpha" operator="dilate" radius="15" result="d"></feMorphology>
+              <feFlood flood-color="#ffffff" result="w"></feFlood>
+              <feComposite in="w" in2="d" operator="in" result="halo"></feComposite>
+              <feMerge><feMergeNode in="halo"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>
+            </filter>
+          </defs>
+          <rect x="0" y="0" width="600" height="600" rx="132" fill="#ECE7DB"></rect>
+          <g filter="url(#halo3)">
+            <g filter="url(#rough3)" fill="none" stroke="#2B8C7C" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,35) translate(210,560) scale(1.32) translate(-210,-560)">
+              <path d="M118 458 L302 458"></path>
+              <path d="M128 474 Q210 482 292 474"></path>
+              <path d="M140 464 L166 600"></path>
+              <path d="M280 464 L254 600"></path>
+              <path d="M172 478 L168 588"></path>
+              <path d="M210 480 L210 594"></path>
+              <path d="M248 478 L252 588"></path>
+              <path d="M211 456 C207 408 214 360 211 312 C210 290 211 272 210 254"></path>
+              <path d="M210 408 C257 399 287 367 289 325 C250 334 220 364 210 408 Z"></path>
+              <path d="M210 364 C163 355 133 323 131 281 C170 290 200 320 210 364 Z"></path>
+              <path d="M210 320 C257 311 287 279 289 237 C250 246 220 276 210 320 Z"></path>
+            </g>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 04 — Sticker, orange -->
+    <div style="flex:none; width:288px; display:flex; flex-direction:column; gap:14px;">
+      <div>
+        <div style="font:600 15px/1.3 'Helvetica Neue',Helvetica,Arial,sans-serif; color:#26261f;">04 · 스티커 (Clay)</div>
+        <div style="font:400 13px/1.5 ui-monospace,monospace; color:#7a7a6e; margin-top:3px;">테라코타 화분 톤의 따뜻한 버전.</div>
+      </div>
+      <div style="background:#fff; border-radius:2px; box-shadow:0 1px 3px rgba(0,0,0,.08); padding:14px; display:flex; align-items:center; justify-content:center;">
+        <svg width="256" height="256" viewBox="0 0 600 600" style="display:block;">
+          <defs>
+            <filter id="rough4" x="-30%" y="-30%" width="160%" height="160%">
+              <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="2" seed="6" result="n"></feTurbulence>
+              <feDisplacementMap in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
+            </filter>
+            <filter id="halo4" x="-40%" y="-40%" width="180%" height="180%">
+              <feMorphology in="SourceAlpha" operator="dilate" radius="15" result="d"></feMorphology>
+              <feFlood flood-color="#ffffff" result="w"></feFlood>
+              <feComposite in="w" in2="d" operator="in" result="halo"></feComposite>
+              <feMerge><feMergeNode in="halo"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>
+            </filter>
+          </defs>
+          <rect x="0" y="0" width="600" height="600" rx="132" fill="#ECE7DB"></rect>
+          <g filter="url(#halo4)">
+            <g filter="url(#rough4)" fill="none" stroke="#E0622C" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,35) translate(210,560) scale(1.32) translate(-210,-560)">
+              <path d="M118 458 L302 458"></path>
+              <path d="M128 474 Q210 482 292 474"></path>
+              <path d="M140 464 L166 600"></path>
+              <path d="M280 464 L254 600"></path>
+              <path d="M172 478 L168 588"></path>
+              <path d="M210 480 L210 594"></path>
+              <path d="M248 478 L252 588"></path>
+              <path d="M211 456 C207 408 214 360 211 312 C210 290 211 272 210 254"></path>
+              <path d="M210 408 C257 399 287 367 289 325 C250 334 220 364 210 408 Z"></path>
+              <path d="M210 364 C163 355 133 323 131 281 C170 290 200 320 210 364 Z"></path>
+              <path d="M210 320 C257 311 287 279 289 237 C250 246 220 276 210 320 Z"></path>
+            </g>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<template id="__bundler_thumbnail">
+  <svg viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+    <rect width="600" height="600" rx="120" fill="#ECE7DB"></rect>
+    <g fill="none" stroke="#33503B" stroke-width="20" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M210 460 L390 460"></path>
+      <path d="M230 470 L250 580"></path>
+      <path d="M370 470 L350 580"></path>
+      <path d="M300 458 C300 458 300 320 300 250"></path>
+      <path d="M300 320 C345 312 372 282 372 245 C335 252 312 282 300 320 Z"></path>
+    </g>
+  </svg>
+</template>
+</x-dc>
+</body>
+</html>

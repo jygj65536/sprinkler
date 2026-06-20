@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="width:600px;height:600px;position:relative;font-family:sans-serif;">
+  
+<svg viewBox="0 0 600 600" width="600" height="600" style="display:block;">
+    <rect x="0" y="0" width="600" height="600" rx="{{ cornerRadius }}" fill="{{ bgColor }}" style="display: inline"></rect>
+
+    <sc-if value="{{ isLine }}" hint-placeholder-val="{{ true }}">
+      <g fill="none" stroke="{{ strokeColor }}" stroke-width="{{ strokeWidth }}" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,35) translate(210,560) scale(1.32) translate(-210,-560)">
+        <!-- pot (outlined) -->
+        <path d="M118 458 L302 458"></path>
+        <path d="M128 474 Q210 482 292 474"></path>
+        <path d="M140 464 L166 600"></path>
+        <path d="M280 464 L254 600"></path>
+        <!-- stem -->
+        <path d="M211 456 C207 408 214 360 211 312 C210 290 211 272 210 254"></path>
+        <!-- leaves -->
+        <sc-for list="{{ leaves }}" as="leaf" hint-placeholder-count="3">
+          <path d="{{ leaf }}"></path>
+        </sc-for>
+      </g>
+    </sc-if>
+
+    <sc-if value="{{ isFilled }}" hint-placeholder-val="{{ false }}">
+      <g fill="{{ strokeColor }}" stroke="none" transform="translate(0,35) translate(210,560) scale(1.32) translate(-210,-560)">
+        <!-- pot rim -->
+        <rect x="110" y="450" width="200" height="22" rx="11"></rect>
+        <!-- pot body -->
+        <path d="M132 476 L288 476 L256 600 L164 600 Z"></path>
+        <!-- stem (solid trunk) -->
+        <path d="M211 456 C207 408 214 360 211 312 C210 290 211 272 210 254" fill="none" stroke="{{ strokeColor }}" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"></path>
+        <!-- leaves (solid) -->
+        <sc-for list="{{ leaves }}" as="leaf" hint-placeholder-count="3">
+          <path d="{{ leaf }}"></path>
+        </sc-for>
+      </g>
+    </sc-if>
+  </svg></div>
+
+<template id="__bundler_thumbnail">
+  <svg viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+    <rect width="600" height="600" rx="132" fill="#364A35"></rect>
+    <g fill="none" stroke="#F8FFF5" stroke-width="11" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M152 444 L448 444"></path>
+      <path d="M300 388 C300 388 300 250 300 168"></path>
+      <path d="M300 280 C332 275 353 254 355 226 C329 232 308 252 300 280 Z"></path>
+      <path d="M300 318 C264 312 240 288 238 256 C268 263 292 286 300 318 Z"></path>
+    </g>
+  </svg>
+</template>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: 600, &quot;height&quot;: 600 },
+  &quot;style&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;Line&quot;, &quot;Filled&quot;], &quot;default&quot;: &quot;Line&quot;, &quot;tsType&quot;: &quot;string&quot; },
+  &quot;palette&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;Forest&quot;, &quot;Clay&quot;, &quot;Cream&quot;, &quot;Night&quot;], &quot;default&quot;: &quot;Forest&quot;, &quot;tsType&quot;: &quot;string&quot; },
+  &quot;fullness&quot;: { &quot;editor&quot;: &quot;int&quot;, &quot;default&quot;: 3, &quot;min&quot;: 2, &quot;max&quot;: 5, &quot;tsType&quot;: &quot;number&quot; },
+  &quot;frame&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;Squircle&quot;, &quot;Circle&quot;, &quot;Soft&quot;, &quot;Sharp&quot;], &quot;default&quot;: &quot;Squircle&quot;, &quot;tsType&quot;: &quot;string&quot; }
+}">
+class Component extends DCLogic {
+  renderVals() {
+    const palettes = {
+      Forest: { bg: '#364A35', stroke: '#F8FFF5' },
+      Clay:   { bg: '#C06B4A', stroke: '#FBF3EC' },
+      Cream:  { bg: '#EDE6D8', stroke: '#3C4B37' },
+      Night:  { bg: '#1B2A25', stroke: '#9FD7A6' },
+    };
+    const shapes = { Squircle: 132, Circle: 300, Soft: 70, Sharp: 14 };
+
+    const theme = palettes[this.props.palette] || palettes.Forest;
+    const cornerRadius = shapes[this.props.frame] ?? 132;
+    const n = Math.max(2, Math.min(5, Math.round(this.props.fullness ?? 3)));
+    const filled = this.props.style === 'Filled';
+
+    // Leaves are distributed between a fixed bottom and top attach point, so the
+    // overall silhouette + top margin stay composed — only the density changes.
+    const bottomY = 408, topY = 320;
+    const leaves = [];
+    for (let i = 0; i < n; i++) {
+      const t = n === 1 ? 0 : i / (n - 1);
+      const y = Math.round(bottomY - t * (bottomY - topY));
+      const s = i % 2 === 0 ? 1 : -1; // alternate right / left
+      leaves.push(
+        `M210 ${y} C${210 + s * 47} ${y - 9} ${210 + s * 77} ${y - 41} ${210 + s * 79} ${y - 83} ` +
+        `C${210 + s * 40} ${y - 74} ${210 + s * 10} ${y - 44} 210 ${y} Z`
+      );
+    }
+
+    return {
+      bgColor: theme.bg,
+      strokeColor: theme.stroke,
+      cornerRadius,
+      strokeWidth: 12.5,
+      leaves,
+      isLine: !filled,
+      isFilled: filled,
+    };
+  }
+}
+</script>
+</body>
+</html>
