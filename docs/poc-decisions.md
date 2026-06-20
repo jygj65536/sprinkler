@@ -59,20 +59,27 @@
 
 → **결정**: PoC는 Native Storage만 사용. 서버는 검수 후 필요 시 추가.
 
-> **스키마 설계 중요**: 달력 화면(과거 내역 + 미래 range 계산), 건강상태 표시, 나와의 유대 정보(등록일)가 추가되면서 데이터 구조가 복잡해졌다. 추후 서버 연동 시 마이그레이션 비용을 줄이기 위해 아래 필드를 처음부터 포함해 설계한다.
+> **현재 구현된 스키마** (`src/types.ts`):
 >
 > ```ts
-> // 식물 엔티티 (내 식물)
-> {
->   id: string,
->   plantDbId: string,       // 식물 DB 참조
->   name: string,
->   photo: string,
->   wateringIntervalDays: number,
->   createdAt: string,       // 유대 정보 기산점 (ISO 8601)
->   wateringLogs: { date: string }[]  // 물주기 이력
+> interface UserPlant {
+>   id: string;           // 'u_' + Date.now()
+>   speciesId: string;    // SPECIES_DB 참조 (기본값 복구용) — 추가 예정
+>   name: string;         // 사용자가 지어준 이름
+>   sci: string;          // 학명
+>   type: PlantType;      // 시각 타입 ('monstera'|'snake'|'palm'|'succulent'|'olive')
+>   color: string;        // 대표 색상 hex
+>   intervalDays: number; // 권장 물주기 주기(일)
+>   registeredAt: string; // 등록일 'YYYY-MM-DD'
+>   light: string;
+>   waterTiming: string;
+>   temp: string;
+>   amount: string;
+>   wateringLogs: string[]; // 물 준 날짜 배열 'YYYY-MM-DD', 오름차순
 > }
 > ```
+>
+> 서버 연동 시 마이그레이션 전략은 `docs/data-design.md` 참조.
 
 ---
 
@@ -110,13 +117,14 @@ TDS가 제공하는 40여 개 컴포넌트(Badge, Button, Modal, TextField, Tab 
 
 → **결정**: PoC는 **앱 접속 시 배너 알림만** 구현. 실제 푸시는 서버 구축 후 2차.
 
-### 5-2. 로그인 필요 여부 ✅
+### 5-2. 로그인 필요 여부 ✅ (방향 결정) / ❌ (미구현)
 푸시 알림을 PoC에서 제외하면 로그인 없이도 동작 가능.
 
 - **로그인 포함**: 유저 식별자 발급, 추후 서버 연동 시 필요
 - **로그인 제외**: PoC 속도 빠름. 단, 나중에 추가 시 재작업
 
-→ **결정**: 로그인은 포함하되 기능을 block하지 않는 형태로 최소 구현.
+→ **결정**: 로그인은 포함하되 기능을 block하지 않는 형태로 구현 예정.  
+→ **현재 상태**: 미구현. `getAnonymousKey()` 연동이 Phase 2 작업으로 남아 있음 (`docs/roadmap.md` 참조).
 
 ---
 
@@ -141,16 +149,16 @@ TDS가 제공하는 40여 개 컴포넌트(Badge, Button, Modal, TextField, Tab 
 
 ## 결정 요약
 
-| 항목 | 상태 | 결정/권장 |
+| 항목 | 상태 | 결정/현황 |
 |------|------|-----------|
-| 개발 방식 | ✅ | WebView SDK |
-| 웹 프레임워크 | ✅ | `create-ait-app` (scaffold 생성 완료) |
-| TDS 통합 | ✅ | 초반 통합 (TDS 필수) |
+| 개발 방식 | ✅ | WebView SDK (`@apps-in-toss/web-framework` 2.x) |
+| 웹 프레임워크 | ✅ | Vite + React + TypeScript (SPA, state 기반 라우팅) |
+| TDS 통합 | ✅ | `@toss/tds-mobile` + `@toss/tds-mobile-ait` |
 | `appName` | ✅ | `sprinkler` (`intoss://sprinkler`) |
-| 식물 DB 소스 | ✅ | PoC: mock JSON |
-| 데이터 저장 | ✅ | PoC: Native Storage만. 스키마는 서버 연동 고려해 설계 |
-| 달력 컴포넌트 | ✅ | `react-day-picker` (TDS에 달력 없음, headless 라이브러리 사용) |
-| 푸시 알림 | ✅ | PoC: 인앱 배너만 |
-| 로그인 | ✅ | 최소 포함 |
-| 테스트 방법 | ✅ | 실기기 |
+| 식물 DB 소스 | ✅ (PoC) | 10종 하드코딩. 농사로 API 빌드타임 연동은 Phase 1 작업 |
+| 데이터 저장 | ✅ | Native Storage (localStorage 폴백). 서버 동기화는 Phase 4 |
+| 달력 컴포넌트 | ✅ | 직접 구현 (TDS에 달력 없음, `react-day-picker` 미사용) |
+| 푸시 알림 | ✅ (PoC) | 인앱 배너만. 실제 푸시는 Phase 4 (백엔드 필요) |
+| 로그인 | ❌ | 방향 결정됨 (`getAnonymousKey`). Phase 2 작업 |
+| 테스트 방법 | ✅ | 실기기 + Vitest 자동화 테스트 79개 |
 | 콘솔 등록 | ✅ | 완료 (`sprinkler`) |

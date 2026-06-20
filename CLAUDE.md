@@ -1,10 +1,9 @@
 @docs/skills/apps-in-toss.md
-`@docs/skills/tds-mobile.md`
 
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-`
+
 ## Project Overview
 
 토스 앱인토스(Apps in Toss) 플랫폼에 입점할 **식물 물주기 알림 미니앱**이다. 식집사(식물 키우는 사람)가 물주기 기록을 남기고, 과거 기록 기반으로 다음 물주기 타이밍에 푸시 알림을 받을 수 있게 한다.
@@ -32,8 +31,9 @@ npx ait init
 
 ```bash
 npm run dev       # 로컬 개발 서버
-npm run build     # 빌드 → <serviceName>.ait 파일 생성
-npx ait deploy --api-key {API_KEY}   # 콘솔 배포 (SDK v1.4.0+)
+npm run build     # 빌드 → sprinkler.ait 파일 생성
+npm run test      # Vitest 테스트 실행
+npx ait deploy --api-key {API_KEY} -m "출시메모"   # 콘솔 배포
 ```
 
 ### `granite.config.ts` 핵심 필드
@@ -47,16 +47,18 @@ export default {
 };
 ```
 
-### 라우팅 (파일 기반, Next.js 스타일)
+### 라우팅 (state 기반, SPA)
 
-앱은 네 화면으로 구성된다.
+`src/App.tsx`의 `screen` 상태로 화면을 전환한다. 파일 기반 라우팅이 아니다.
 
 ```
-pages/index.tsx           → intoss://sprinkler               (Home: 내 식물 목록 + 건강상태 표시 + 새 식물 추가 진입)
-pages/calendar.tsx        → intoss://sprinkler/calendar       (달력: 식물별 물주기 내역 + 미래 물주기 예정일 range 표기, 노출 식물 수 유저가 선택)
-pages/plants/[id].tsx     → intoss://sprinkler/plants/:id     (내 식물 상세: 메타정보 + 유대정보 + 물주기 데이터)
-pages/plants/add.tsx      → intoss://sprinkler/plants/add     (식물 추가: 검색 → 내 식물 등록)
+src/screens/Home.tsx      → screen === 'home'      (Home: 내 식물 목록 + 건강상태 표시 + 새 식물 추가 진입)
+src/screens/Calendar.tsx  → screen === 'calendar'  (달력: 식물별 물주기 내역 + 미래 물주기 예정일 range 표기, 노출 식물 수 유저가 선택)
+src/screens/Detail.tsx    → screen === 'detail'    (내 식물 상세: 메타정보 + 유대정보 + 물주기 데이터 + 취소/삭제)
+src/screens/Add.tsx       → screen === 'add'       (식물 추가: 검색 → 바텀시트 확인 → 이름 지어주기 → 등록)
 ```
+
+딥링크 진입점: `intoss://sprinkler`
 
 ## 앱인토스 SDK 사용 시 주의사항
 
