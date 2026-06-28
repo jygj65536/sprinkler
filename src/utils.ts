@@ -65,10 +65,17 @@ export function getDueInfo(plant: UserPlant, today: string): DueInfo {
   return { dueDate, daysUntil, text, color };
 }
 
+export type PlantDot = { color: string; name: string };
+
 export type CalCell = {
   day: number; iso: string; isToday: boolean;
-  pastDots: string[]; futureDots: string[];
-  bandBg: string; isCenter: boolean; centerCol: string; numCol: string;
+  pastDots: string[]; futureDots: string[]; overdueDots: string[];
+  morePast: boolean; moreFuture: boolean; moreOverdue: boolean;
+  pastItems: PlantDot[]; futureItems: PlantDot[]; overdueItems: PlantDot[];
+  bandBg: string;
+  isCenter: boolean;        // 단일 식물 — 예정일 (미래)
+  isCenterOverdue: boolean; // 단일 식물 — 예정일 (과거)
+  centerCol: string; numCol: string;
 };
 
 export function buildCalendarWeeks(
@@ -79,18 +86,30 @@ export function buildCalendarWeeks(
   const startDow = first.getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  const evMap: Record<string, string[]> = {};
+  const evMap: Record<string, PlantDot[]> = {};
   selPlants.forEach(p => p.wateringLogs.forEach(log => {
     if (!evMap[log]) evMap[log] = [];
-    evMap[log].push(p.color);
+    evMap[log].push({ color: p.color, name: p.name });
   }));
 
   const buildCell = (d: Date, dim: boolean): CalCell => {
     const iso = toISO(d);
     const isToday = iso === today;
-    const pastDots = (evMap[iso] || []).slice(0, 4);
-    let bandBg = 'transparent', isCenter = false, centerCol = '';
-    const futureDots: string[] = [];
+    const pastItems = evMap[iso] || [];
+    const pastDots = pastItems.slice(0, 4).map(i => i.color);
+    const morePast = pastItems.length > 4;
+    let bandBg = 'transparent', isCenter = false, isCenterOverdue = false, centerCol = '';
+    const futureItems: PlantDot[] = [];
+    const overdueItems: PlantDot[] = [];
+
+    selPlants.forEach(p => {
+      const last = p.wateringLogs[p.wateringLogs.length - 1];
+      const center = addDays(last, p.waterIntervalDays[getCurrentSeason()]);
+      if (iso === center) {
+        if (diffDays(today, iso) > 0) futureItems.push({ color: p.color, name: p.name });
+        else overdueItems.push({ color: p.color, name: p.name });
+      }
+    });
 
     if (selPlants.length === 1) {
       const p = selPlants[0];
@@ -100,19 +119,22 @@ export function buildCalendarWeeks(
       if (diffDays(lo, iso) >= 0 && diffDays(iso, hi) >= 0 && diffDays(today, iso) > 0) {
         bandBg = hexAlpha(p.color, 0.16);
       }
-      if (iso === center && diffDays(today, iso) > 0) { isCenter = true; centerCol = p.color; }
-    } else {
-      selPlants.forEach(p => {
-        const last = p.wateringLogs[p.wateringLogs.length - 1];
-        const center = addDays(last, p.waterIntervalDays[getCurrentSeason()]);
-        if (iso === center && diffDays(today, iso) > 0) futureDots.push(p.color);
-      });
+      if (iso === center) {
+        centerCol = p.color;
+        if (diffDays(today, iso) > 0) isCenter = true;
+        else isCenterOverdue = true;
+      }
     }
+
+    const futureDots = selPlants.length === 1 ? [] : futureItems.slice(0, 4).map(i => i.color);
+    const overdueDots = selPlants.length === 1 ? [] : overdueItems.slice(0, 4).map(i => i.color);
+    const moreFuture  = selPlants.length === 1 ? false : futureItems.length > 4;
+    const moreOverdue = selPlants.length === 1 ? false : overdueItems.length > 4;
 
     const dow = d.getDay();
     let numCol = dim ? '#BCC9AE' : (dow === 0 ? '#CC6B52' : 'var(--ink)');
     if (isToday) numCol = 'var(--ink)';
-    return { day: d.getDate(), iso, isToday, pastDots, futureDots: futureDots.slice(0, 4), bandBg, isCenter, centerCol, numCol };
+    return { day: d.getDate(), iso, isToday, pastDots, futureDots, overdueDots, morePast, moreFuture, moreOverdue, pastItems, futureItems, overdueItems, bandBg, isCenter, isCenterOverdue, centerCol, numCol };
   };
 
   const cells: CalCell[] = [];
