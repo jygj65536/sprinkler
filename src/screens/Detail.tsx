@@ -28,6 +28,7 @@ export interface DetailPlant {
   sci: string;
   type: PlantType;
   doodle: string;
+  dropLight: string;
   status: HealthStatus;
   due: DueInfo;
   bondDays: number;
@@ -37,6 +38,7 @@ export interface DetailPlant {
   miniWeeks: MiniCell[][];
   canCancelWatering: boolean;
   editable: PlantInitialData & { initialData?: PlantInitialData };
+  onWater: () => void;
   onCancelWatering: () => void;
   onEditFirstWatering: (date: string) => void;
   onDelete: () => void;
@@ -179,13 +181,16 @@ export default function DetailScreen({ plant: p, weekdays, goBack }: Props) {
       {/* 상단 바 */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px 6px' }}>
         <button onClick={goBack} style={{ width: 38, height: 38, border: '2px solid var(--ink)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, cursor: 'pointer', background: 'none', color: 'var(--ink)' }}>‹</button>
-        <button onClick={openEdit} style={{ padding: '7px 14px', border: '2px solid var(--ink)', borderRadius: 16, background: 'transparent', color: 'var(--ink)', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>편집</button>
+        <button onClick={p.onWater} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 14px 8px', border: '2px solid var(--ink)', borderRadius: 16, background: 'var(--ink)', color: 'var(--paper)', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+          <span style={{ width: 15, height: 17, display: 'inline-block' }} dangerouslySetInnerHTML={{ __html: p.dropLight }} />
+          물 줬어요
+        </button>
       </div>
 
       {/* 식물 정보 */}
       <div style={{ textAlign: 'center', padding: '4px 24px 0' }}>
         <div style={{ width: 150, height: 150, margin: '0 auto', color: 'var(--ink)', filter: 'drop-shadow(0 2px 1.5px rgba(40,34,22,.18))' }} dangerouslySetInnerHTML={{ __html: p.doodle }} />
-        <div style={{ fontFamily: 'Caveat, cursive', fontSize: 40, fontWeight: 700, lineHeight: 1, marginTop: 2 }}>{p.name}</div>
+        <div style={{ fontFamily: 'KJD, sans-serif', fontSize: 40, fontWeight: 700, lineHeight: 1, marginTop: 2 }}>{p.name}</div>
         {(p.speciesName || p.sci) && (
           <div style={{ fontSize: 13, color: 'var(--soft)', marginTop: 3 }}>
             {p.speciesName && <span>{p.speciesName}{p.sci ? ' · ' : ''}</span>}
@@ -202,14 +207,14 @@ export default function DetailScreen({ plant: p, weekdays, goBack }: Props) {
       <div style={{ margin: '22px 20px 0', display: 'flex', gap: 11 }}>
         <div style={{ flex: 1, border: '2px solid var(--ink)', borderRadius: 18, padding: '13px 14px', background: 'var(--faint)' }}>
           <div style={{ fontSize: 12, color: 'var(--soft)', fontWeight: 600 }}>함께한 지</div>
-          <div style={{ fontFamily: 'Caveat, cursive', fontSize: 32, fontWeight: 700, lineHeight: 1, marginTop: 3 }}>
+          <div style={{ fontFamily: 'KJD, sans-serif', fontSize: 32, fontWeight: 700, lineHeight: 1, marginTop: 3 }}>
             {p.bondDays}<span style={{ fontSize: 18 }}> 일</span>
           </div>
           <div style={{ fontSize: 11.5, color: 'var(--soft)', marginTop: 4 }}>{p.registeredText} 들임</div>
         </div>
         <div style={{ flex: 1, border: '2px solid var(--ink)', borderRadius: 18, padding: '13px 14px' }}>
           <div style={{ fontSize: 12, color: 'var(--soft)', fontWeight: 600 }}>마지막 물주기</div>
-          <div style={{ fontFamily: 'Caveat, cursive', fontSize: 32, fontWeight: 700, lineHeight: 1, marginTop: 3 }}>
+          <div style={{ fontFamily: 'KJD, sans-serif', fontSize: 32, fontWeight: 700, lineHeight: 1, marginTop: 3 }}>
             {p.status.daysSince}<span style={{ fontSize: 18 }}> 일 전</span>
           </div>
           <div style={{ fontSize: 11.5, color: p.due.color, marginTop: 4, fontWeight: 700 }}>다음 물주기: {p.due.text}</div>
@@ -218,7 +223,7 @@ export default function DetailScreen({ plant: p, weekdays, goBack }: Props) {
 
       {/* 케어 정보 */}
       <div style={{ margin: '18px 20px 0' }}>
-        <div style={{ fontFamily: 'Caveat, cursive', fontSize: 24, fontWeight: 700, marginBottom: 8 }}>이 아이가 좋아하는 것</div>
+        <div style={{ fontFamily: 'KJD, sans-serif', fontSize: 24, fontWeight: 700, marginBottom: 8 }}>좋아하는 것</div>
         <div style={{ border: '2px solid var(--ink)', borderRadius: 18, overflow: 'hidden' }}>
           {p.careRows.map((r, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '12px 15px', borderBottom: i < p.careRows.length - 1 ? '1.5px solid var(--line)' : 'none' }}>
@@ -233,7 +238,7 @@ export default function DetailScreen({ plant: p, weekdays, goBack }: Props) {
       {/* 물주기 일기 */}
       <div style={{ margin: '20px 20px 0' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-          <div style={{ fontFamily: 'Caveat, cursive', fontSize: 24, fontWeight: 700 }}>물주기 일기</div>
+          <div style={{ fontFamily: 'KJD, sans-serif', fontSize: 24, fontWeight: 700 }}>물주기 일기</div>
           <div style={{ display: 'flex', border: '2px solid var(--ink)', borderRadius: 12, overflow: 'hidden', fontSize: 12.5, fontWeight: 700 }}>
             <button onClick={() => setView('list')} style={{ padding: '5px 12px', cursor: 'pointer', background: view === 'list' ? 'var(--ink)' : 'transparent', color: view === 'list' ? 'var(--paper)' : 'var(--ink)', border: 'none', fontFamily: 'inherit', fontSize: 'inherit', fontWeight: 'inherit' }}>목록</button>
             <button onClick={() => setView('cal')} style={{ padding: '5px 12px', cursor: 'pointer', background: view === 'cal' ? 'var(--ink)' : 'transparent', color: view === 'cal' ? 'var(--paper)' : 'var(--ink)', border: 'none', borderLeft: '2px solid var(--ink)', fontFamily: 'inherit', fontSize: 'inherit', fontWeight: 'inherit' }}>달력</button>
@@ -289,8 +294,14 @@ export default function DetailScreen({ plant: p, weekdays, goBack }: Props) {
         )}
       </div>
 
-      {/* 식물 삭제 */}
-      <div style={{ margin: '28px 20px 0', paddingTop: 20, borderTop: '1.5px dashed var(--line)' }}>
+      {/* 식물 삭제 / 편집 */}
+      <div style={{ margin: '28px 20px 0', paddingTop: 20, borderTop: '1.5px dashed var(--line)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <button
+          onClick={openEdit}
+          style={{ width: '100%', padding: '13px', border: '2px solid var(--line)', borderRadius: 18, background: 'transparent', color: 'var(--soft)', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+        >
+          정보 수정
+        </button>
         <button
           onClick={p.onDelete}
           style={{ width: '100%', padding: '13px', border: '2px solid #CC6B52', borderRadius: 18, background: 'transparent', color: '#CC6B52', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}

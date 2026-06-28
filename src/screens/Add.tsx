@@ -166,7 +166,7 @@ export default function AddScreen({
       {/* 헤더 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 22px 14px' }}>
         <button onClick={goBack} style={{ width: 38, height: 38, border: '2px solid var(--ink)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, cursor: 'pointer', background: 'none', color: 'var(--ink)', flexShrink: 0 }}>‹</button>
-        <div style={{ fontFamily: 'Caveat, cursive', fontSize: 34, fontWeight: 700, lineHeight: 1 }}>식물 들이기</div>
+        <div style={{ fontFamily: 'KJD, sans-serif', fontSize: 34, fontWeight: 700, lineHeight: 1 }}>식물 들이기</div>
       </div>
 
       <div style={{ padding: '0 22px' }}>

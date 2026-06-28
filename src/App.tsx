@@ -4,7 +4,7 @@ import { SPECIES_DB, DEMO_PLANTS, COLOR_PALETTE } from './data';
 import type { CustomPlantData } from './screens/Add';
 import { todayISO, getStatus, getDueInfo, addDays, diffDays, buildCalendarWeeks, buildMiniCalendar, fmtDate, parseDate, getCurrentSeason } from './utils';
 import { loadPlants, savePlants } from './storage';
-import { plantDoodle, shelfDoodle, DROP_LIGHT, SEARCH, HOME_NAV, CAL_NAV, CARE_ICONS, SUMMARY_NEED, SUMMARY_OK } from './doodles';
+import { plantDoodle, shelfDoodle, DROP_LIGHT, SEARCH, HOME_NAV, CAL_NAV, CARE_ICONS, SUMMARY_NEED, SUMMARY_OK, CAN_STICKER, DROP_MINI } from './doodles';
 import HomeScreen from './screens/Home';
 import CalendarScreen from './screens/Calendar';
 import DetailScreen from './screens/Detail';
@@ -63,9 +63,9 @@ export default function App() {
 
   const waterMultiple = (ids: string[]) => {
     const targets = plants.filter(p => ids.includes(p.id) && p.wateringLogs[p.wateringLogs.length - 1] !== TODAY);
-    if (targets.length === 0) { showToast('모두 오늘 이미 기록됐어요'); return; }
+    if (targets.length === 0) { showToast('오늘 이미 기록됐어요'); return; }
     setPlants(prev => prev.map(p => targets.some(t => t.id === p.id) ? { ...p, wateringLogs: [...p.wateringLogs, TODAY] } : p));
-    showToast(targets.length === 1 ? `${targets[0].name} 물 주기 완료! 💧` : `${targets.length}개 식물에게 물 줬어요 💧`);
+    showToast(targets.length === 1 ? `${targets[0].name} 물 주기 완료!` : `${targets.length}개 식물에게 물 줬어요`);
   };
 
   const cancelWatering = (id: string) => {
@@ -226,6 +226,7 @@ export default function App() {
     return {
       id: dp.id, name: dp.name, speciesName: dp.speciesName, sci: dp.sci, type: dp.type,
       doodle: plantDoodle(dp.type),
+      dropLight: DROP_LIGHT,
       status: st, due: du,
       bondDays: diffDays(dp.registeredAt, TODAY),
       registeredText: `${regDate.getFullYear()}.${String(regDate.getMonth() + 1).padStart(2, '0')}`,
@@ -248,6 +249,7 @@ export default function App() {
           light: dp.light, temp: dp.temp,
         },
       },
+      onWater: () => waterMultiple([dp.id]),
       onCancelWatering: () => cancelWatering(dp.id),
       onEditFirstWatering: (date: string) => editFirstWatering(dp.id, date),
       onDelete: () => deletePlant(dp.id),
@@ -287,8 +289,10 @@ export default function App() {
           plants={homePlants}
           needWater={needWater}
           summaryDoodle={needWater > 0 ? SUMMARY_NEED : SUMMARY_OK}
+          canSticker={CAN_STICKER}
+          dropMini={DROP_MINI}
           goAdd={() => go('add')}
-          onWaterMultiple={waterMultiple}
+          onWaterOne={id => waterMultiple([id])}
         />
       )}
 
@@ -337,7 +341,6 @@ export default function App() {
             <div style={{ width: 26, height: 26 }} dangerouslySetInnerHTML={{ __html: HOME_NAV }} />
             <span style={{ fontSize: 11, fontWeight: 700 }}>홈</span>
           </button>
-          <button onClick={() => go('add')} style={{ width: 54, height: 54, border: '2.5px solid var(--ink)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--ink)', color: 'var(--paper)', fontSize: 28, cursor: 'pointer', marginBottom: 14, boxShadow: '3px 3px 0 0 var(--line)' }}>＋</button>
           <button onClick={() => go('calendar')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer', color: screen === 'calendar' ? 'var(--ink)' : 'var(--soft)', padding: 0, fontFamily: 'inherit' }}>
             <div style={{ width: 26, height: 26 }} dangerouslySetInnerHTML={{ __html: CAL_NAV }} />
             <span style={{ fontSize: 11, fontWeight: 700 }}>달력</span>

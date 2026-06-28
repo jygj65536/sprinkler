@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { PlantType } from '../types';
-import { EMPTY_POT, WATERING_CAN } from '../doodles';
+import { EMPTY_POT } from '../doodles';
 
 export interface HomePlant {
   id: string;
@@ -18,16 +18,25 @@ interface Props {
   plants: HomePlant[];
   needWater: number;
   summaryDoodle: string;
+  canSticker: string;
+  dropMini: string;
   goAdd: () => void;
-  onWaterMultiple: (ids: string[]) => void;
+  onWaterOne: (id: string) => void;
 }
 
 const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
 const SHELF_SIZE = 3;
 
-export default function HomeScreen({ plants, needWater, summaryDoodle, goAdd, onWaterMultiple }: Props) {
-  const [waterMode,   setWaterMode]   = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+const DROP_POSITIONS = [
+  { left: 0,   delay: '0s'   },
+  { left: 18,  delay: '.18s' },
+  { left: -18, delay: '.36s' },
+];
+
+export default function HomeScreen({ plants, needWater, summaryDoodle, canSticker, dropMini, goAdd, onWaterOne }: Props) {
+  const [waterMode, setWaterMode]   = useState(false);
+  const [sprinkleId, setSprinkleId] = useState<string | null>(null);
+  const sprinkleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const now = new Date();
   const todayLabel = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일 ${DAYS[now.getDay()]}요일`;
@@ -36,48 +45,48 @@ export default function HomeScreen({ plants, needWater, summaryDoodle, goAdd, on
   const shelves: ShelfItem[][] = [];
   for (let i = 0; i < allItems.length; i += SHELF_SIZE) shelves.push(allItems.slice(i, i + SHELF_SIZE));
 
-  const toggleSelect = (id: string) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+  const toggleWaterMode = () => {
+    setWaterMode(prev => !prev);
+    setSprinkleId(null);
+    if (sprinkleTimer.current) clearTimeout(sprinkleTimer.current);
   };
 
-  const startWaterMode = () => {
-    setSelectedIds(new Set());
-    setWaterMode(true);
-  };
-
-  const cancelWaterMode = () => {
-    setWaterMode(false);
-    setSelectedIds(new Set());
-  };
-
-  const confirmWater = () => {
-    if (selectedIds.size === 0) return;
-    onWaterMultiple([...selectedIds]);
-    setWaterMode(false);
-    setSelectedIds(new Set());
+  const sprinkleWater = (id: string) => {
+    if (sprinkleId) return;
+    setSprinkleId(id);
+    if (sprinkleTimer.current) clearTimeout(sprinkleTimer.current);
+    sprinkleTimer.current = setTimeout(() => {
+      onWaterOne(id);
+      setSprinkleId(null);
+    }, 1050);
   };
 
   return (
     <div style={{ padding: 'max(62px, calc(44px + var(--safe-top))) 22px calc(104px + var(--safe-bottom))', minHeight: '100vh' }}>
-      <div style={{ fontSize: 13, color: 'var(--soft)', fontWeight: 500, letterSpacing: '.5px' }}>{todayLabel}</div>
-      <div style={{ fontFamily: 'Caveat, cursive', fontSize: 42, fontWeight: 700, lineHeight: 1, marginTop: 4 }}>오늘의 식구들</div>
+      {/* 날짜 */}
+      <div style={{ fontFamily: 'KJD, sans-serif', fontSize: 16, color: 'var(--soft)', fontWeight: 500, letterSpacing: '.5px' }}>{todayLabel}</div>
+      {/* 타이틀 */}
+      <div style={{ fontFamily: 'KJD, sans-serif', fontSize: 42, fontWeight: 700, lineHeight: 1, marginTop: 4 }}>오늘의 식구들</div>
 
-      {/* 요약 배너 — 식물이 있을 때만 */}
+      {/* 요약 배너 */}
       {plants.length > 0 && (
         <div style={{ margin: '18px 0 22px', border: '2px solid var(--ink)', borderRadius: '20px 22px 19px 23px', padding: '15px 18px', display: 'flex', alignItems: 'center', gap: 14, background: '#364A35' }}>
           <div style={{ width: 42, height: 42, flexShrink: 0 }} dangerouslySetInnerHTML={{ __html: summaryDoodle }} />
           <div>
-            <div style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.25, color: '#F8FFF5' }}>
+            <div style={{ fontFamily: 'KJD, sans-serif', fontSize: 20, fontWeight: 700, lineHeight: 1.25, color: '#F8FFF5' }}>
               {needWater > 0 ? `${needWater}개의 식물이 물을 기다려요` : '모두 촉촉해요'}
             </div>
-            <div style={{ fontSize: 13, color: 'var(--soft)', marginTop: 2 }}>
+            <div style={{ fontFamily: 'KJD, sans-serif', fontSize: 13, color: 'var(--soft)', marginTop: 2 }}>
               {needWater > 0 ? '오늘 챙겨주면 더 건강해질 거예요' : '오늘은 푹 쉬어도 좋아요'}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 식물이 없을 때 안내 */}
+      {plants.length === 0 && (
+        <div onClick={goAdd} style={{ marginTop: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, padding: 15, border: '2.5px dashed var(--soft)', borderRadius: 20, cursor: 'pointer', color: 'var(--soft)', fontSize: 16, fontWeight: 700 }}>
+          <span style={{ fontSize: 22, lineHeight: 1 }}>＋</span> 새로운 식물 들이기
         </div>
       )}
 
@@ -93,24 +102,33 @@ export default function HomeScreen({ plants, needWater, summaryDoodle, goAdd, on
             ) : (
               <div
                 key={item.id}
-                onClick={waterMode ? () => toggleSelect(item.id) : item.onOpen}
+                onClick={waterMode ? () => sprinkleWater(item.id) : item.onOpen}
                 style={{ flex: 1, display: 'flex', justifyContent: 'center', cursor: 'pointer', minWidth: 0, position: 'relative' }}
               >
-                <div style={{ width: 80, height: 86, opacity: waterMode && !selectedIds.has(item.id) ? 0.55 : 1, transition: 'opacity .15s', filter: 'drop-shadow(0 2px 1.5px rgba(40,34,22,.18))' }} dangerouslySetInnerHTML={{ __html: item.shelfDoodle }} />
-                {waterMode && (
-                  <div style={{
-                    position: 'absolute', top: 2, right: 6,
-                    width: 22, height: 22, borderRadius: '50%',
-                    border: `2px solid ${selectedIds.has(item.id) ? '#4A7C9B' : 'var(--line)'}`,
-                    background: selectedIds.has(item.id) ? '#4A7C9B' : 'var(--paper)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all .15s',
-                  }}>
-                    {selectedIds.has(item.id) && (
-                      <svg viewBox="0 0 10 8" width="11" height="9" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M1 4 l3 3 l5-6"/>
-                      </svg>
-                    )}
+                <div
+                  style={{
+                    width: 80, height: 86,
+                    opacity: waterMode && sprinkleId && sprinkleId !== item.id ? 0.55 : 1,
+                    transition: 'opacity .15s',
+                    filter: 'drop-shadow(2px 4px 3px rgba(40,34,22,.22))',
+                  }}
+                  dangerouslySetInnerHTML={{ __html: item.shelfDoodle }}
+                />
+                {/* 물방울 애니메이션 */}
+                {waterMode && sprinkleId === item.id && (
+                  <div style={{ position: 'absolute', top: -6, left: 0, right: 0, height: 60, pointerEvents: 'none' }}>
+                    {DROP_POSITIONS.map((d, i) => (
+                      <span
+                        key={i}
+                        style={{
+                          position: 'absolute', top: 0,
+                          left: `calc(50% - 18px + ${d.left}px)`,
+                          width: 13, height: 13,
+                          animation: `sprinkleDrop .85s ease-in ${d.delay} infinite`,
+                        }}
+                        dangerouslySetInnerHTML={{ __html: dropMini }}
+                      />
+                    ))}
                   </div>
                 )}
               </div>
@@ -124,11 +142,11 @@ export default function HomeScreen({ plants, needWater, summaryDoodle, goAdd, on
           {/* 이름 & 상태 */}
           <div style={{ display: 'flex', padding: '0 8px', marginTop: 14 }}>
             {shelf.map(item => isAdd(item) ? (
-              <div key="__add__" style={{ flex: 1, textAlign: 'center', minWidth: 0, opacity: waterMode ? 0.15 : 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--soft)', opacity: 0.6 }}>+ 들이기</div>
+              <div key="__add__" style={{ flex: 1, minWidth: 0, opacity: waterMode ? 0.15 : 1 }}>
+                <div style={{ textAlign: 'center', fontSize: 13, fontWeight: 700, color: 'var(--soft)', opacity: 0.6 }}>+ 들이기</div>
               </div>
             ) : (
-              <div key={item.id} onClick={waterMode ? () => toggleSelect(item.id) : item.onOpen} style={{ flex: 1, textAlign: 'center', cursor: 'pointer', minWidth: 0 }}>
+              <div key={item.id} onClick={waterMode ? () => sprinkleWater(item.id) : item.onOpen} style={{ flex: 1, textAlign: 'center', cursor: 'pointer', minWidth: 0 }}>
                 <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.1 }}>{item.name}</div>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 5 }}>
                   <span style={{ width: 7, height: 7, borderRadius: '50%', background: item.status.color, flexShrink: 0 }} />
@@ -140,66 +158,48 @@ export default function HomeScreen({ plants, needWater, summaryDoodle, goAdd, on
         </div>
       ))}
 
-      {/* 물뿌리개 FAB */}
+      {/* 물뿌리개 FAB — 원 없이 이미지만, 우측 하단 */}
       {plants.length > 0 && (
-        <button
-          onClick={waterMode ? cancelWaterMode : startWaterMode}
+        <div
+          onClick={toggleWaterMode}
           style={{
             position: 'fixed',
-            bottom: 'calc(96px + var(--safe-bottom))',
-            right: 16,
-            width: 72,
-            height: 72,
-            border: 'none',
-            background: 'transparent',
-            cursor: 'pointer',
-            padding: 0,
+            right: 20,
+            bottom: `calc(100px + var(--safe-bottom))`,
             zIndex: 40,
-            color: waterMode ? 'var(--soft)' : 'var(--ink)',
-            fontSize: waterMode ? 26 : undefined,
-            fontWeight: waterMode ? 700 : undefined,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            width: 100, height: 100,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer',
+            animation: waterMode ? 'canBob 1s ease-in-out infinite' : 'none',
+            filter: 'drop-shadow(2px 3px 4px rgba(40,34,22,.28))',
           }}
-          aria-label={waterMode ? '취소' : '물 주기'}
         >
-          {waterMode
-            ? '✕'
-            : <div style={{ width: '100%', height: '100%' }} dangerouslySetInnerHTML={{ __html: WATERING_CAN }} />}
-        </button>
+          <div style={{ width: 100, height: 100 }} dangerouslySetInnerHTML={{ __html: canSticker }} />
+        </div>
       )}
 
-      {/* 물주기 확인 바 */}
+      {/* 물주기 모드 힌트 */}
       {waterMode && (
         <div style={{
           position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          padding: '12px 20px',
-          paddingBottom: 'calc(12px + var(--safe-bottom))',
-          background: 'var(--paper)',
-          borderTop: '2px solid var(--ink)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          zIndex: 45,
-          height: 'calc(84px + var(--safe-bottom))',
-          boxSizing: 'border-box',
+          bottom: `calc(104px + var(--safe-bottom))`,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 55,
+          background: '#4A7C9B', color: '#fff',
+          padding: '10px 16px 10px 14px',
+          borderRadius: 16,
+          fontSize: 14, fontWeight: 700,
+          whiteSpace: 'nowrap',
+          display: 'flex', alignItems: 'center', gap: 10,
+          boxShadow: '0 6px 16px -6px rgba(40,34,22,.5)',
+          animation: 'toastIn .3s ease',
         }}>
-          <button
-            onClick={cancelWaterMode}
-            style={{ flex: 1, padding: '11px 0', border: '2px solid var(--line)', borderRadius: 16, background: 'transparent', color: 'var(--soft)', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
-          >
-            취소
-          </button>
-          <button
-            onClick={confirmWater}
-            style={{ flex: 2, padding: '11px 0', border: '2px solid var(--ink)', borderRadius: 16, background: selectedIds.size > 0 ? '#4A7C9B' : 'var(--line)', color: 'white', fontSize: 15, fontWeight: 700, cursor: selectedIds.size > 0 ? 'pointer' : 'default', fontFamily: 'inherit', transition: 'background .15s' }}
-          >
-            {selectedIds.size > 0 ? `${selectedIds.size}개 식물에게 물 주기` : '화분을 선택해 주세요'}
-          </button>
+          식물을 선택해서 물을 주세요
+          <span
+            onClick={toggleWaterMode}
+            style={{ cursor: 'pointer', border: '1.5px solid rgba(255,255,255,.6)', borderRadius: 10, padding: '2px 11px', fontSize: 12.5 }}
+          >완료</span>
         </div>
       )}
     </div>
