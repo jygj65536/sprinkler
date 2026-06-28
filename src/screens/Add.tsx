@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Analytics } from '@apps-in-toss/web-framework';
 import { PlantType, Season, SeasonalNumbers, SeasonalLabels } from '../types';
 import { plantDoodle } from '../doodles';
 import { COLOR_PALETTE } from '../data';
@@ -108,6 +109,14 @@ export default function AddScreen({
   const isCustomMode = query.trim() !== '' && results.length === 0;
   const hint = query.trim() ? `${results.length}개의 친구를 찾았어요` : '예) 몬스테라, 스투키, 다육이 …';
 
+  useEffect(() => {
+    if (isCustomMode) Analytics.impression({ log_name: 'imp_add_no_result', query: query.trim() });
+  }, [isCustomMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (showCustomSheet) Analytics.impression({ log_name: 'imp_add_custom_sheet' });
+  }, [showCustomSheet]);
+
   const handleAddCustom = () => {
     const waterIntervalDays: SeasonalNumbers = {
       spring: WATER_OPTIONS[customWaterBySeason.spring].days,
@@ -176,6 +185,7 @@ export default function AddScreen({
           <input
             value={query}
             onChange={e => onQueryChange(e.target.value)}
+            onFocus={() => Analytics.click({ log_name: 'click_add_search_bar' })}
             placeholder="식물 이름을 검색해 보세요"
             style={{ border: 'none', outline: 'none', background: 'transparent', fontFamily: 'Shantell Sans, sans-serif', fontSize: 16, fontWeight: 500, color: 'var(--ink)', width: '100%' }}
           />
@@ -199,7 +209,7 @@ export default function AddScreen({
 
         {/* 검색 0건 — 직접 추가 버튼 */}
         {isCustomMode && (
-          <div onClick={() => setShowCustomSheet(true)} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', border: '2px dashed var(--ink)', borderRadius: '18px 16px 19px 17px', cursor: 'pointer', opacity: 0.75 }}>
+          <div onClick={() => { Analytics.click({ log_name: 'click_add_custom_open', query: query.trim() }); setShowCustomSheet(true); }} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', border: '2px dashed var(--ink)', borderRadius: '18px 16px 19px 17px', cursor: 'pointer', opacity: 0.75 }}>
             <div style={{ width: 48, height: 48, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>🌱</div>
             <div>
               <div style={{ fontSize: 15, fontWeight: 700 }}>직접 추가하기</div>
