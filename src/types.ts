@@ -4,7 +4,7 @@ export type PlantType =
   | 'stuckyi' | 'cactus';
 
 export type HealthKey = 'healthy' | 'thirsty' | 'urgent';
-export type Screen = 'home' | 'calendar' | 'detail' | 'add';
+export type Screen = 'home' | 'calendar' | 'archive' | 'detail' | 'add';
 export type DetailView = 'list' | 'cal';
 export type Season = 'spring' | 'summer' | 'autumn' | 'winter';
 
@@ -61,6 +61,7 @@ export interface UserPlant {
   registeredAt: string;
   wateringLogs: string[];
   archived?: boolean;
+  archivedAt?: string;
   initialData?: PlantInitialData;
 }
 

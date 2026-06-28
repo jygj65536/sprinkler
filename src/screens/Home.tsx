@@ -83,7 +83,7 @@ export default function HomeScreen({ plants, needWater, summaryDoodle, canSticke
         {weatherPermission === 'denied' && (
           <button
             onClick={onRequestWeather}
-            style={{ fontSize: 12, color: 'var(--soft)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit', flexShrink: 0, textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: 3 }}
+            style={{ fontSize: 12, color: 'var(--soft)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'KJD, sans-serif', flexShrink: 0, textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: 3, letterSpacing: '.5px' }}
           >
             📍 위치 켜기
           </button>

@@ -158,3 +158,7 @@ const _CAN_PATHS = `<path d="M48 64 Q47 61 50 61 L82 61 Q85 61 84 64 L79 92 Q78 
 export const CAN_STICKER = `<svg viewBox="0 0 120 120" width="100%" height="100%" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><g fill="#fff" stroke="#fff" stroke-width="7" stroke-linejoin="round" stroke-linecap="round">${_CAN_PATHS}</g><g stroke="#4A7C9B">${_CAN_PATHS}</g></svg>`;
 
 export const DROP_MINI = `<svg viewBox="0 0 24 24" width="100%" height="100%" fill="#4A7C9B"><path d="M12 2C12 2 5 9 5 15a7 7 0 0 0 14 0C19 9 12 2 12 2Z"/></svg>`;
+
+export const ARCHIVE_NAV = `<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8.5" width="20" height="12" rx="2"/><path d="M2 8.5L4 3.5h16l2 5"/><path d="M9 14.5h6"/></svg>`;
+
+export const ARCHIVE_DOODLE = `<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8.5" width="20" height="12" rx="2"/><path d="M2 8.5L4 3.5h16l2 5"/><path d="M9 14.5h6"/><path d="M15.5 2Q17 .5 18.5 2"/><path d="M17.5.5Q19-1 20.5.5"/></svg>`;
