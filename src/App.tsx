@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Analytics } from '@apps-in-toss/web-framework';
 import { UserPlant, Screen, PlantInitialData } from './types';
 import { useWeather } from './hooks/useWeather';
 import { SPECIES_DB, DEMO_PLANTS } from './data';
@@ -58,9 +59,26 @@ export default function App() {
     toastTimer.current = setTimeout(() => setToast(null), 1900);
   };
 
+  const activePlants   = plants.filter(p => !p.archived);
+  const archivedPlants = plants.filter(p => !!p.archived);
+  const needWater      = activePlants.filter(p => getStatus(p, TODAY).key !== 'healthy').length;
+
   const go = (s: Screen) => {
     if (s === 'home' || s === 'calendar' || s === 'archive') setLastMain(s);
     setScreen(s);
+    if (s === 'home') {
+      const statuses = activePlants.map(p => getStatus(p, TODAY).key);
+      Analytics.screen({ log_name: 'screen_home', home_state: activePlants.length === 0 ? 'empty' : needWater > 0 ? 'need' : 'ok', plant_count: activePlants.length, need_water_count: needWater, healthy_count: statuses.filter(k => k === 'healthy').length, thirsty_count: statuses.filter(k => k === 'thirsty').length, urgent_count: statuses.filter(k => k === 'urgent').length });
+    } else if (s === 'calendar') {
+      Analytics.screen({ log_name: 'screen_calendar', plant_count: activePlants.length });
+    } else if (s === 'archive') {
+      Analytics.screen({ log_name: 'screen_archive', archive_state: archivedPlants.length === 0 ? 'empty' : 'has_plants', plant_count: archivedPlants.length });
+    } else if (s === 'detail') {
+      const dp = plants.find(p => p.id === selectedId);
+      Analytics.screen({ log_name: 'screen_detail', plant_id: selectedId ?? '', species_id: dp?.speciesId ?? '', plant_type: dp?.type ?? '', plant_count: activePlants.length, entry_from: lastMain });
+    } else if (s === 'add') {
+      Analytics.screen({ log_name: 'screen_add', plant_count: activePlants.length, entry_from: lastMain });
+    }
   };
 
   const doWater = (ids: string[]) => {
@@ -117,7 +135,9 @@ export default function App() {
   };
 
   const deletePlant = (id: string) => {
-    setPlants(prev => prev.filter(p => p.id !== id));
+    const p = plants.find(x => x.id === id);
+    if (p) Analytics.click({ log_name: 'click_detail_delete', plant_id: p.id, species_id: p.speciesId, plant_type: p.type, bond_days: diffDays(p.registeredAt, TODAY), plant_status: getStatus(p, TODAY).key });
+    setPlants(prev => prev.filter(pl => pl.id !== id));
     setCalVisible(prev => prev.filter(pid => pid !== id));
     go('home');
     showToast('식물을 삭제했어요');
@@ -126,6 +146,7 @@ export default function App() {
   const archivePlant = (id: string) => {
     const p = plants.find(x => x.id === id);
     if (!p) return;
+    Analytics.click({ log_name: 'click_detail_archive', plant_id: p.id, species_id: p.speciesId, plant_type: p.type, plant_status: getStatus(p, TODAY).key, bond_days: diffDays(p.registeredAt, TODAY) });
     setPlants(prev => prev.map(x => x.id !== id ? x : { ...x, archived: true, archivedAt: TODAY }));
     go('archive');
     showToast(`${p.name}을(를) 보관함으로 옮겼어요`);
@@ -134,6 +155,8 @@ export default function App() {
   const unarchivePlant = (id: string) => {
     const p = plants.find(x => x.id === id);
     if (!p) return;
+    const archivedDays = p.archivedAt ? diffDays(p.archivedAt, TODAY) : 0;
+    Analytics.click({ log_name: 'click_detail_unarchive', plant_id: p.id, plant_type: p.type, archived_days: archivedDays });
     setPlants(prev => prev.map(x => x.id !== id ? x : { ...x, archived: false, archivedAt: undefined }));
     go('home');
     showToast(`${p.name}이(가) 다시 식구로 돌아왔어요`);
@@ -156,6 +179,7 @@ export default function App() {
       wateringLogs: [TODAY],
       initialData: { name: data.name, speciesName: data.speciesName || data.name, sci: data.sci, type: data.type, color: data.color, waterIntervalDays: data.waterIntervalDays, waterTiming: data.waterTiming, light: data.light, temp: data.temp },
     };
+    Analytics.click({ log_name: 'click_add_custom_confirm', plant_type: np.type, plant_count: activePlants.length + 1 });
     setPlants(prev => [...prev, np]);
     setCalVisible(prev => [...prev, np.id]);
     setAddQuery('');
@@ -180,6 +204,7 @@ export default function App() {
       wateringLogs: [TODAY],
       initialData: { name: finalName, speciesName: sp.name, sci: sp.sci, type: sp.type, color, waterIntervalDays: sp.waterIntervalDays, waterTiming: sp.waterTiming, light: sp.light, temp: sp.temp },
     };
+    Analytics.click({ log_name: 'click_add_species_confirm', species_id: np.speciesId, plant_type: np.type, plant_count: activePlants.length + 1 });
     setPlants(prev => [...prev, np]);
     setCalVisible(prev => [...prev, np.id]);
     setAddQuery('');
@@ -192,25 +217,24 @@ export default function App() {
     let y = calYear, m = calMonth + n;
     if (m < 0) { m = 11; y--; }
     if (m > 11) { m = 0; y++; }
+    Analytics.click({ log_name: n < 0 ? 'click_calendar_month_prev' : 'click_calendar_month_next', year: y, month: m + 1 });
     setCalYear(y); setCalMonth(m);
   };
-
-  const activePlants  = plants.filter(p => !p.archived);
-  const archivedPlants = plants.filter(p => !!p.archived);
 
   // ---- Home 데이터 ----
   const homePlants = activePlants.map(p => {
     const st = getStatus(p, TODAY);
     return {
-      id: p.id, name: p.name, type: p.type,
+      id: p.id, name: p.name, type: p.type, speciesId: p.speciesId,
       shelfDoodle: shelfDoodle(p.type, st.color),
       status: st,
       archived: false as const,
-      onOpen: () => { setSelectedId(p.id); go('detail'); },
+      onOpen: () => {
+        Analytics.click({ log_name: 'click_home_plant_card', plant_id: p.id, species_id: p.speciesId, plant_type: p.type, plant_status: st.key });
+        setSelectedId(p.id); go('detail');
+      },
     };
   });
-  const needWater = activePlants.filter(p => getStatus(p, TODAY).key !== 'healthy').length;
-
   // ---- Archive 데이터 ----
   const archivePlants = archivedPlants.map(p => {
     const d = p.archivedAt ? new Date(p.archivedAt.replace(/-/g, '/')) : new Date();
@@ -218,7 +242,10 @@ export default function App() {
       id: p.id, name: p.name, type: p.type,
       shelfDoodle: shelfDoodle(p.type, p.color),
       archiveTag: `${d.getMonth() + 1}월 ${d.getDate()}일 보관`,
-      onOpen: () => { setSelectedId(p.id); go('detail'); },
+      onOpen: () => {
+        Analytics.click({ log_name: 'click_archive_plant_card', plant_id: p.id, plant_type: p.type });
+        setSelectedId(p.id); go('detail');
+      },
     };
   });
   const archiveSummary = archivedPlants.length > 0
@@ -231,19 +258,26 @@ export default function App() {
   const chips = activePlants.map(p => ({
     id: p.id, name: p.name, color: p.color,
     on: calVisible.includes(p.id),
-    onToggle: () => setCalVisible(prev =>
-      prev.includes(p.id) ? prev.filter(id => id !== p.id) : [...prev, p.id]
-    ),
+    onToggle: () => {
+      const willBeOn = !calVisible.includes(p.id);
+      Analytics.click({ log_name: 'click_calendar_plant_chip', plant_id: p.id, plant_type: p.type, toggle_to: willBeOn ? 'on' : 'off' });
+      setCalVisible(prev =>
+        prev.includes(p.id) ? prev.filter(id => id !== p.id) : [...prev, p.id]
+      );
+    },
   }));
   const upcoming = selPlants
     .filter(p => !p.archived)
     .map(p => ({ p, due: getDueInfo(p, TODAY) }))
     .sort((a, b) => parseDate(a.due.dueDate).getTime() - parseDate(b.due.dueDate).getTime())
     .map(({ p, due }) => ({
-      name: p.name, color: p.color,
+      name: p.name, color: p.color, plant_id: p.id, due_days: due.daysUntil,
       dueText: due.text, dueCol: due.color,
       rangeText: `추천 구간 ${fmtDate(addDays(due.dueDate, -2))} ~ ${fmtDate(addDays(due.dueDate, 2))}`,
-      onOpen: () => { setSelectedId(p.id); go('detail'); },
+      onOpen: () => {
+        Analytics.click({ log_name: 'click_calendar_upcoming_item', plant_id: p.id, plant_type: p.type, due_days: due.daysUntil });
+        setSelectedId(p.id); go('detail');
+      },
     }));
 
   // ---- Detail 데이터 ----

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Analytics } from '@apps-in-toss/web-framework';
 import { PlantType, HealthStatus, DueInfo, Season, SeasonalNumbers, SeasonalLabels, PlantInitialData } from '../types';
 import { MiniCell } from '../utils';
 import { CARE_ICONS, plantDoodle } from '../doodles';
@@ -106,6 +107,7 @@ export default function DetailScreen({ plant: p, weekdays, goBack }: Props) {
   const [pickerMonth, setPickerMonth] = useState(0);
 
   const openDatePicker = (rawDate: string) => {
+    Analytics.click({ log_name: 'click_detail_edit_first_water_open', plant_id: p.id });
     const d = new Date(rawDate + 'T00:00:00');
     setPickerDate(rawDate);
     setPickerYear(d.getFullYear());
@@ -143,7 +145,7 @@ export default function DetailScreen({ plant: p, weekdays, goBack }: Props) {
     setEditTemp(snapTemp(src.temp));
   };
 
-  const openEdit = () => { initEditState(p.editable); setEditOpen(true); };
+  const openEdit = () => { Analytics.click({ log_name: 'click_detail_edit_open', plant_id: p.id }); initEditState(p.editable); setEditOpen(true); };
 
   const setSeasonWater = (idx: number) => {
     if (editWaterMode === 'uniform') {
@@ -161,7 +163,7 @@ export default function DetailScreen({ plant: p, weekdays, goBack }: Props) {
     setEditWaterMode(mode);
   };
 
-  const resetToInitial = () => { if (p.editable.initialData) initEditState(p.editable.initialData); };
+  const resetToInitial = () => { if (p.editable.initialData) { Analytics.click({ log_name: 'click_detail_edit_reset', plant_id: p.id }); initEditState(p.editable.initialData); } };
 
   const saveEdit = () => {
     const waterIntervalDays: SeasonalNumbers = {
@@ -172,6 +174,17 @@ export default function DetailScreen({ plant: p, weekdays, goBack }: Props) {
       spring: EW[editWaterByS.spring].label, summer: EW[editWaterByS.summer].label,
       autumn: EW[editWaterByS.autumn].label, winter: EW[editWaterByS.winter].label,
     };
+    const orig = p.editable.initialData || p.editable;
+    const changed: string[] = [];
+    if ((editName.trim() || p.editable.name) !== orig.name) changed.push('name');
+    if (editSpeciesName !== orig.speciesName) changed.push('species_name');
+    if (editSci !== orig.sci) changed.push('sci');
+    if (editType !== orig.type) changed.push('type');
+    if (editColor !== orig.color) changed.push('color');
+    if (waterIntervalDays.spring !== orig.waterIntervalDays.spring || waterIntervalDays.summer !== orig.waterIntervalDays.summer || waterIntervalDays.autumn !== orig.waterIntervalDays.autumn || waterIntervalDays.winter !== orig.waterIntervalDays.winter) changed.push('water_interval');
+    if (editLight !== orig.light) changed.push('light');
+    if (editTemp !== orig.temp) changed.push('temp');
+    Analytics.click({ log_name: 'click_detail_edit_save', plant_id: p.id, fields_changed: changed.join(','), changed_count: changed.length });
     p.onEdit({ name: editName.trim() || p.editable.name, speciesName: editSpeciesName, sci: editSci, type: editType, color: editColor, waterIntervalDays, waterTiming, light: editLight, temp: editTemp });
     setEditOpen(false);
   };
@@ -238,8 +251,8 @@ export default function DetailScreen({ plant: p, weekdays, goBack }: Props) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
           <div style={{ fontFamily: 'KJD, sans-serif', fontSize: 24, fontWeight: 700 }}>물주기 일기</div>
           <div style={{ display: 'flex', border: '2px solid var(--ink)', borderRadius: 12, overflow: 'hidden', fontSize: 12.5, fontWeight: 700 }}>
-            <button onClick={() => setView('list')} style={{ padding: '5px 12px', cursor: 'pointer', background: view === 'list' ? 'var(--ink)' : 'transparent', color: view === 'list' ? 'var(--paper)' : 'var(--ink)', border: 'none', fontFamily: 'inherit', fontSize: 'inherit', fontWeight: 'inherit' }}>목록</button>
-            <button onClick={() => setView('cal')} style={{ padding: '5px 12px', cursor: 'pointer', background: view === 'cal' ? 'var(--ink)' : 'transparent', color: view === 'cal' ? 'var(--paper)' : 'var(--ink)', border: 'none', borderLeft: '2px solid var(--ink)', fontFamily: 'inherit', fontSize: 'inherit', fontWeight: 'inherit' }}>달력</button>
+            <button onClick={() => { Analytics.click({ log_name: 'click_detail_diary_view_toggle', plant_id: p.id, view: 'list' }); setView('list'); }} style={{ padding: '5px 12px', cursor: 'pointer', background: view === 'list' ? 'var(--ink)' : 'transparent', color: view === 'list' ? 'var(--paper)' : 'var(--ink)', border: 'none', fontFamily: 'inherit', fontSize: 'inherit', fontWeight: 'inherit' }}>목록</button>
+            <button onClick={() => { Analytics.click({ log_name: 'click_detail_diary_view_toggle', plant_id: p.id, view: 'cal' }); setView('cal'); }} style={{ padding: '5px 12px', cursor: 'pointer', background: view === 'cal' ? 'var(--ink)' : 'transparent', color: view === 'cal' ? 'var(--paper)' : 'var(--ink)', border: 'none', borderLeft: '2px solid var(--ink)', fontFamily: 'inherit', fontSize: 'inherit', fontWeight: 'inherit' }}>달력</button>
           </div>
         </div>
 
@@ -260,7 +273,7 @@ export default function DetailScreen({ plant: p, weekdays, goBack }: Props) {
                   >수정</button>
                 ) : i === 0 && p.canCancelWatering ? (
                   <button
-                    onClick={p.onCancelWatering}
+                    onClick={() => { Analytics.click({ log_name: 'click_detail_cancel_water', plant_id: p.id }); p.onCancelWatering(); }}
                     style={{ flexShrink: 0, padding: '3px 9px', border: '1.5px solid #CC6B52', borderRadius: 10, background: 'transparent', color: '#CC6B52', fontSize: 11.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
                   >취소</button>
                 ) : null}
@@ -390,7 +403,7 @@ export default function DetailScreen({ plant: p, weekdays, goBack }: Props) {
               </div>
             ))}
             <div
-              onClick={() => { if (pickerDate) { p.onEditFirstWatering(pickerDate); setPickerOpen(false); } }}
+              onClick={() => { if (pickerDate) { Analytics.click({ log_name: 'click_detail_edit_first_water_save', plant_id: p.id, new_date: pickerDate }); p.onEditFirstWatering(pickerDate); setPickerOpen(false); } }}
               style={{ textAlign: 'center', padding: 14, background: 'var(--ink)', color: 'var(--paper)', borderRadius: 16, marginTop: 16, fontSize: 16, fontWeight: 700, cursor: 'pointer' }}
             >
               수정하기
