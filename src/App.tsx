@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Analytics } from '@apps-in-toss/web-framework';
 import { UserPlant, Screen, PlantInitialData } from './types';
 import { useWeather } from './hooks/useWeather';
-import { SPECIES_DB, DEMO_PLANTS } from './data';
+import { SPECIES_DB } from './data';
 import type { CustomPlantData } from './screens/Add';
 import { todayISO, getStatus, getDueInfo, addDays, diffDays, buildCalendarWeeks, buildMiniCalendar, fmtDate, parseDate, getCurrentSeason } from './utils';
 import { loadPlants, savePlants } from './storage';
@@ -19,13 +19,13 @@ const WEEKDAYS = ['일','월','화','수','목','금','토'].map((l, i) => ({ la
 
 export default function App() {
   const TODAY = todayISO(); // 렌더마다 재계산 — 자정 갱신 보장
-  const [plants, setPlants] = useState<UserPlant[]>(DEMO_PLANTS);
+  const [plants, setPlants] = useState<UserPlant[]>([]);
   const [screen, setScreen] = useState<Screen>('home');
   const [lastMain, setLastMain] = useState<'home' | 'calendar' | 'archive'>('home');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [calYear, setCalYear] = useState(new Date().getFullYear());
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
-  const [calVisible, setCalVisible] = useState<string[]>(DEMO_PLANTS.map(p => p.id));
+  const [calVisible, setCalVisible] = useState<string[]>([]);
   const [addQuery, setAddQuery] = useState('');
   const [addSelId, setAddSelId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
