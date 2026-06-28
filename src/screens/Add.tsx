@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PlantType, Season, SeasonalNumbers, SeasonalLabels } from '../types';
 import { plantDoodle } from '../doodles';
 import { COLOR_PALETTE } from '../data';
@@ -42,12 +42,8 @@ interface Props {
   onQueryChange: (q: string) => void;
   results: SearchResult[];
   selectedSpecies: SpeciesPreview | null;
-  customName: string;
-  onCustomNameChange: (name: string) => void;
-  selectedColor: string;
-  onColorChange: (color: string) => void;
   onClosePreview: () => void;
-  onAdd: () => void;
+  onAdd: (name: string, color: string) => void;
   onAddCustom: (data: CustomPlantData) => void;
   goBack: () => void;
   searchIcon: string;
@@ -67,7 +63,6 @@ const TYPE_LABELS: Record<PlantType, string> = {
   tree:    '나무',    herb:   '허브',
 };
 
-// watercycle 코드 기반 — label과 days는 항상 묶음
 const WATER_OPTIONS = [
   { label: '항상 촉촉하게',    days: 2 },
   { label: '촉촉하게 유지',    days: 5 },
@@ -81,7 +76,7 @@ const SEASON_KO: Record<Season, string> = { spring: '봄', summer: '여름', aut
 const LIGHT_OPTIONS = ['반음지·음지 OK', '밝은 간접광', '직사광·양지'] as const;
 const TEMP_OPTIONS  = ['10–15°C', '16–20°C', '21–25°C', '26–30°C'] as const;
 
-const WATER_DEFAULT = 2; // index → '겉흙 마르면', 10일
+const WATER_DEFAULT = 2;
 const TEMP_DEFAULT  = '16–20°C';
 
 const defaultWaterBySeason = (): Record<Season, number> =>
@@ -89,84 +84,114 @@ const defaultWaterBySeason = (): Record<Season, number> =>
 
 export default function AddScreen({
   query, onQueryChange, results,
-  selectedSpecies, customName, onCustomNameChange,
-  selectedColor, onColorChange,
-  onClosePreview, onAdd, onAddCustom, goBack, searchIcon,
+  selectedSpecies, onClosePreview, onAdd, onAddCustom, goBack, searchIcon,
 }: Props) {
-  const [customNameLocal,     setCustomNameLocal]     = useState('');
-  const [customSpeciesName,   setCustomSpeciesName]   = useState('');
-  const [customSci,           setCustomSci]           = useState('');
-  const [customType,          setCustomType]          = useState<PlantType>('foliage');
-  const [customColor,         setCustomColor]         = useState(COLOR_PALETTE[0]);
-  const [customWaterMode,     setCustomWaterMode]     = useState<'uniform' | 'seasonal'>('uniform');
-  const [customWaterBySeason, setCustomWaterBySeason] = useState<Record<Season, number>>(defaultWaterBySeason);
-  const [customWaterSeason,   setCustomWaterSeason]   = useState<Season>('spring');
-  const [customLight,         setCustomLight]         = useState<typeof LIGHT_OPTIONS[number]>(LIGHT_OPTIONS[1]);
-  const [customTemp,          setCustomTemp]          = useState<typeof TEMP_OPTIONS[number]>(TEMP_DEFAULT);
-  const [showCustomSheet,     setShowCustomSheet]     = useState(false);
+  // 공유 상태 (이름·색상) — 두 경로 모두 사용
+  const [name,      setName]      = useState('');
+  const [color,     setColor]     = useState(COLOR_PALETTE[0]);
+  const [nameError, setNameError] = useState(false);
 
-  const isCustomMode = query.trim() !== '' && results.length === 0;
-  const hint = query.trim() ? `${results.length}개의 친구를 찾았어요` : '예) 몬스테라, 스투키, 다육이 …';
+  // 직접 입력 전용 상태
+  const [showCustom,        setShowCustom]        = useState(false);
+  const [customSpecies,     setCustomSpecies]     = useState('');
+  const [customSci,         setCustomSci]         = useState('');
+  const [customType,        setCustomType]        = useState<PlantType>('foliage');
+  const [customWaterMode,   setCustomWaterMode]   = useState<'uniform' | 'seasonal'>('uniform');
+  const [customWaterBy,     setCustomWaterBy]     = useState<Record<Season, number>>(defaultWaterBySeason);
+  const [customWaterSeason, setCustomWaterSeason] = useState<Season>('spring');
+  const [customLight,       setCustomLight]       = useState<typeof LIGHT_OPTIONS[number]>(LIGHT_OPTIONS[1]);
+  const [customTemp,        setCustomTemp]        = useState<typeof TEMP_OPTIONS[number]>(TEMP_DEFAULT);
 
-  const handleAddCustom = () => {
-    const waterIntervalDays: SeasonalNumbers = {
-      spring: WATER_OPTIONS[customWaterBySeason.spring].days,
-      summer: WATER_OPTIONS[customWaterBySeason.summer].days,
-      autumn: WATER_OPTIONS[customWaterBySeason.autumn].days,
-      winter: WATER_OPTIONS[customWaterBySeason.winter].days,
-    };
-    const waterTiming: SeasonalLabels = {
-      spring: WATER_OPTIONS[customWaterBySeason.spring].label,
-      summer: WATER_OPTIONS[customWaterBySeason.summer].label,
-      autumn: WATER_OPTIONS[customWaterBySeason.autumn].label,
-      winter: WATER_OPTIONS[customWaterBySeason.winter].label,
-    };
-    onAddCustom({
-      name: customNameLocal.trim() || '내 식물',
-      speciesName: customSpeciesName.trim() || query.trim(),
-      sci: customSci.trim(),
-      type: customType,
-      color: customColor,
-      waterIntervalDays,
-      waterTiming,
-      light: customLight,
-      temp: customTemp,
-    });
-    setCustomNameLocal('');
-    setCustomSpeciesName('');
+  // 종 시트가 열릴 때 이름·색상 초기화
+  useEffect(() => {
+    if (selectedSpecies) {
+      setName('');
+      setColor(COLOR_PALETTE[0]);
+      setNameError(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSpecies?.id]);
+
+  const isSpecies = selectedSpecies !== null;
+  const showSheet = isSpecies || showCustom;
+
+  const closeSheet = () => {
+    if (isSpecies) onClosePreview();
+    else setShowCustom(false);
+  };
+
+  const openCustom = () => {
+    setName('');
+    setColor(COLOR_PALETTE[0]);
+    setNameError(false);
+    setCustomSpecies('');
     setCustomSci('');
     setCustomType('foliage');
-    setCustomColor(COLOR_PALETTE[0]);
     setCustomWaterMode('uniform');
-    setCustomWaterBySeason(defaultWaterBySeason());
+    setCustomWaterBy(defaultWaterBySeason());
     setCustomWaterSeason('spring');
     setCustomLight(LIGHT_OPTIONS[1]);
     setCustomTemp(TEMP_DEFAULT);
-    setShowCustomSheet(false);
+    setShowCustom(true);
+  };
+
+  const handleConfirm = () => {
+    if (name.trim() === '') { setNameError(true); return; }
+    if (isSpecies) {
+      onAdd(name, color);
+    } else {
+      const waterIntervalDays: SeasonalNumbers = {
+        spring: WATER_OPTIONS[customWaterBy.spring].days,
+        summer: WATER_OPTIONS[customWaterBy.summer].days,
+        autumn: WATER_OPTIONS[customWaterBy.autumn].days,
+        winter: WATER_OPTIONS[customWaterBy.winter].days,
+      };
+      const waterTiming: SeasonalLabels = {
+        spring: WATER_OPTIONS[customWaterBy.spring].label,
+        summer: WATER_OPTIONS[customWaterBy.summer].label,
+        autumn: WATER_OPTIONS[customWaterBy.autumn].label,
+        winter: WATER_OPTIONS[customWaterBy.winter].label,
+      };
+      onAddCustom({
+        name: name.trim() || '내 식물',
+        speciesName: customSpecies.trim() || query.trim(),
+        sci: customSci.trim(),
+        type: customType,
+        color,
+        waterIntervalDays,
+        waterTiming,
+        light: customLight,
+        temp: customTemp,
+      });
+      setShowCustom(false);
+    }
   };
 
   const setSeasonWater = (idx: number) => {
     if (customWaterMode === 'uniform') {
-      setCustomWaterBySeason({ spring: idx, summer: idx, autumn: idx, winter: idx });
+      setCustomWaterBy({ spring: idx, summer: idx, autumn: idx, winter: idx });
     } else {
-      setCustomWaterBySeason(prev => ({ ...prev, [customWaterSeason]: idx }));
+      setCustomWaterBy(prev => ({ ...prev, [customWaterSeason]: idx }));
     }
   };
 
   const switchWaterMode = (mode: 'uniform' | 'seasonal') => {
     if (mode === 'uniform') {
-      const cur = customWaterBySeason[customWaterSeason];
-      setCustomWaterBySeason({ spring: cur, summer: cur, autumn: cur, winter: cur });
+      const cur = customWaterBy[customWaterSeason];
+      setCustomWaterBy({ spring: cur, summer: cur, autumn: cur, winter: cur });
     }
     setCustomWaterMode(mode);
   };
+
+  const isCustomMode = query.trim() !== '' && results.length === 0;
+  const hint = query.trim() ? `${results.length}개의 친구를 찾았어요` : '예) 몬스테라, 스투키, 다육이 …';
 
   return (
     <div style={{ paddingTop: 'max(54px, calc(38px + var(--safe-top)))', paddingBottom: 60, minHeight: '100vh', position: 'relative' }}>
       {/* 헤더 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 22px 14px' }}>
         <button onClick={goBack} style={{ width: 38, height: 38, border: '2px solid var(--ink)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, cursor: 'pointer', background: 'none', color: 'var(--ink)', flexShrink: 0 }}>‹</button>
-        <div style={{ fontFamily: 'Caveat, cursive', fontSize: 34, fontWeight: 700, lineHeight: 1 }}>식물 들이기</div>
+        <div style={{ fontFamily: 'KJD, sans-serif', fontSize: 34, fontWeight: 700, lineHeight: 1 }}>식물 들이기</div>
       </div>
 
       <div style={{ padding: '0 22px' }}>
@@ -197,9 +222,9 @@ export default function AddScreen({
           </div>
         ))}
 
-        {/* 검색 0건 — 직접 추가 버튼 */}
+        {/* 검색 0건 — 직접 추가 */}
         {isCustomMode && (
-          <div onClick={() => setShowCustomSheet(true)} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', border: '2px dashed var(--ink)', borderRadius: '18px 16px 19px 17px', cursor: 'pointer', opacity: 0.75 }}>
+          <div onClick={openCustom} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', border: '2px dashed var(--ink)', borderRadius: '18px 16px 19px 17px', cursor: 'pointer', opacity: 0.75 }}>
             <div style={{ width: 48, height: 48, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>🌱</div>
             <div>
               <div style={{ fontSize: 15, fontWeight: 700 }}>직접 추가하기</div>
@@ -209,193 +234,157 @@ export default function AddScreen({
         )}
       </div>
 
-      {/* 직접 추가 바텀시트 */}
-      {showCustomSheet && (
+      {/* 바텀시트 — 두 경로 공통 */}
+      {showSheet && (
         <>
-          <div onClick={() => setShowCustomSheet(false)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(35,31,24,.32)', zIndex: 50 }} />
+          <div onClick={closeSheet} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(35,31,24,.32)', zIndex: 50 }} />
           <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 51, background: 'var(--paper)', borderRadius: '30px 30px 0 0', border: '2.5px solid var(--ink)', borderBottom: 'none', padding: '14px 22px calc(30px + var(--safe-bottom))', maxHeight: '90vh', overflowY: 'auto', animation: 'popIn .26s ease' }}>
             <div style={{ width: 44, height: 5, borderRadius: 3, background: 'var(--line)', margin: '0 auto 16px' }} />
-            <div style={{ fontFamily: 'Caveat, cursive', fontSize: 28, fontWeight: 700, marginBottom: 18 }}>직접 추가하기</div>
 
-            {/* 이름 */}
-            <div style={{ marginBottom: 12 }}>
-              <Label>이름</Label>
-              <input
-                value={customNameLocal}
-                onChange={e => setCustomNameLocal(e.target.value)}
-                placeholder="식물 이름"
-                style={{ width: '100%', boxSizing: 'border-box', padding: '10px 13px', border: '2px solid var(--ink)', borderRadius: 14, fontFamily: 'Shantell Sans, sans-serif', fontSize: 15, fontWeight: 600, background: 'var(--paper)', color: 'var(--ink)', outline: 'none' }}
-              />
-            </div>
-
-            {/* 종 이름 */}
-            <div style={{ marginBottom: 12 }}>
-              <Label>종 이름</Label>
-              <input
-                value={customSpeciesName}
-                onChange={e => setCustomSpeciesName(e.target.value)}
-                placeholder={query || '종 이름'}
-                style={{ width: '100%', boxSizing: 'border-box', padding: '10px 13px', border: '2px solid var(--ink)', borderRadius: 14, fontFamily: 'Shantell Sans, sans-serif', fontSize: 15, fontWeight: 500, background: 'var(--paper)', color: 'var(--ink)', outline: 'none' }}
-              />
-            </div>
-
-            {/* 학명 */}
-            <div style={{ marginBottom: 18 }}>
-              <Label>학명</Label>
-              <input
-                value={customSci}
-                onChange={e => setCustomSci(e.target.value)}
-                placeholder="학명"
-                style={{ width: '100%', boxSizing: 'border-box', padding: '10px 13px', border: '2px solid var(--ink)', borderRadius: 14, fontFamily: 'Shantell Sans, sans-serif', fontSize: 14, fontStyle: 'italic', fontWeight: 500, background: 'var(--paper)', color: 'var(--ink)', outline: 'none' }}
-              />
-            </div>
-
-            {/* 달력 색상 */}
-            <div style={{ marginBottom: 22 }}>
-              <Label>달력 색상</Label>
-              <ColorPicker selected={customColor} onChange={setCustomColor} />
-            </div>
-
-            {/* 어떤 모습인가요? */}
-            <div style={{ marginBottom: 22 }}>
-              <SectionLabel>어떤 모습인가요?</SectionLabel>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 7 }}>
-                {PLANT_TYPES.map(t => {
-                  const sel = customType === t;
-                  return (
-                    <button key={t} onClick={() => setCustomType(t)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '8px 4px', border: `2px solid ${sel ? 'var(--ink)' : 'var(--line)'}`, borderRadius: 14, background: sel ? 'rgba(54,74,53,0.08)' : 'transparent', cursor: 'pointer' }}>
-                      <div style={{ width: 44, height: 44, color: 'var(--ink)' }} dangerouslySetInnerHTML={{ __html: plantDoodle(t) }} />
-                      <span style={{ fontSize: 10.5, fontWeight: 700, color: sel ? 'var(--ink)' : 'var(--soft)' }}>{TYPE_LABELS[t]}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 어떤 환경을 좋아하나요? */}
-            <div style={{ border: '2px solid var(--line)', borderRadius: 18, padding: '16px 14px', marginBottom: 22 }}>
-              <SectionLabel>어떤 환경을 좋아하나요?</SectionLabel>
-
-              {/* 물주기 */}
-              <div style={{ marginBottom: 16 }}>
-                <Label>물주기</Label>
-                <div style={{ display: 'flex', gap: 7, marginBottom: 10 }}>
-                  {(['uniform', 'seasonal'] as const).map(mode => {
-                    const active = customWaterMode === mode;
-                    return (
-                      <button key={mode} onClick={() => switchWaterMode(mode)} style={{ flex: 1, padding: '7px 4px', border: `2px solid ${active ? 'var(--ink)' : 'var(--line)'}`, borderRadius: 10, background: active ? 'var(--ink)' : 'transparent', color: active ? 'var(--paper)' : 'var(--soft)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-                        {mode === 'uniform' ? '계절 구분 없이' : '계절별로 다르게'}
-                      </button>
-                    );
-                  })}
+            {/* 분기 — 종 정보 표시 vs 직접 입력 폼 */}
+            {isSpecies ? (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
+                  <div style={{ width: 74, height: 74, flexShrink: 0, color: 'var(--ink)' }} dangerouslySetInnerHTML={{ __html: selectedSpecies.doodle }} />
+                  <div>
+                    <div style={{ fontFamily: 'KJD, sans-serif', fontSize: 34, fontWeight: 700, lineHeight: 1 }}>{selectedSpecies.name}</div>
+                    <div style={{ fontSize: 13, color: 'var(--soft)', fontStyle: 'italic', marginTop: 2 }}>{selectedSpecies.sci}</div>
+                  </div>
                 </div>
-                {customWaterMode === 'seasonal' && (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 10 }}>
-                    {SEASONS.map(s => {
-                      const active = customWaterSeason === s;
-                      const opt = WATER_OPTIONS[customWaterBySeason[s]];
+                <div style={{ fontSize: 14, lineHeight: 1.55, color: 'var(--soft)', margin: '0 2px 14px' }}>{selectedSpecies.desc}</div>
+                <div style={{ border: '2px solid var(--ink)', borderRadius: 18, overflow: 'hidden', marginBottom: 18 }}>
+                  {selectedSpecies.careRows.map((r, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '11px 15px', borderBottom: i < selectedSpecies.careRows.length - 1 ? '1.5px solid var(--line)' : 'none' }}>
+                      <div style={{ width: 24, height: 24, flexShrink: 0, color: 'var(--ink)' }} dangerouslySetInnerHTML={{ __html: r.icon }} />
+                      <div style={{ fontSize: 12.5, color: 'var(--soft)', width: 78, flexShrink: 0 }}>{r.label}</div>
+                      <div style={{ fontSize: 14.5, fontWeight: 600, flex: 1 }}>{r.value}</div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontFamily: 'KJD, sans-serif', fontSize: 28, fontWeight: 700, marginBottom: 18 }}>직접 추가하기</div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <Label>종 이름</Label>
+                  <input value={customSpecies} onChange={e => setCustomSpecies(e.target.value)} placeholder={query || '종 이름'} style={inputStyle} />
+                </div>
+                <div style={{ marginBottom: 18 }}>
+                  <Label>학명</Label>
+                  <input value={customSci} onChange={e => setCustomSci(e.target.value)} placeholder="학명" style={{ ...inputStyle, fontSize: 14, fontStyle: 'italic' }} />
+                </div>
+
+                <div style={{ marginBottom: 22 }}>
+                  <SectionLabel>어떤 모습인가요?</SectionLabel>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 7 }}>
+                    {PLANT_TYPES.map(t => {
+                      const sel = customType === t;
                       return (
-                        <button key={s} onClick={() => setCustomWaterSeason(s)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '7px 4px', border: `2px solid ${active ? 'var(--ink)' : 'var(--line)'}`, borderRadius: 12, background: active ? 'var(--ink)' : 'transparent', cursor: 'pointer' }}>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: active ? 'var(--paper)' : 'var(--ink)' }}>{SEASON_KO[s]}</span>
-                          <span style={{ fontSize: 9.5, color: active ? 'rgba(255,255,255,0.6)' : 'var(--soft)', lineHeight: 1.2, textAlign: 'center' }}>{opt.days}일마다</span>
+                        <button key={t} onClick={() => setCustomType(t)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '8px 4px', border: `2px solid ${sel ? 'var(--ink)' : 'var(--line)'}`, borderRadius: 14, background: sel ? 'rgba(54,74,53,0.08)' : 'transparent', cursor: 'pointer' }}>
+                          <div style={{ width: 44, height: 44, color: 'var(--ink)' }} dangerouslySetInnerHTML={{ __html: plantDoodle(t) }} />
+                          <span style={{ fontSize: 10.5, fontWeight: 700, color: sel ? 'var(--ink)' : 'var(--soft)' }}>{TYPE_LABELS[t]}</span>
                         </button>
                       );
                     })}
                   </div>
-                )}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                  {WATER_OPTIONS.map((opt, i) => {
-                    const refSeason = customWaterMode === 'uniform' ? 'spring' : customWaterSeason;
-                    const sel = customWaterBySeason[refSeason] === i;
-                    return (
-                      <button key={i} onClick={() => setSeasonWater(i)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 3, padding: '10px 13px', border: `2px solid ${sel ? 'var(--ink)' : 'var(--line)'}`, borderRadius: 14, background: sel ? 'var(--ink)' : 'transparent', cursor: 'pointer', textAlign: 'left' }}>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: sel ? 'var(--paper)' : 'var(--ink)' }}>{opt.label}</span>
-                        <span style={{ fontSize: 11, color: sel ? 'rgba(255,255,255,0.6)' : 'var(--soft)' }}>{opt.days}일마다</span>
-                      </button>
-                    );
-                  })}
                 </div>
-              </div>
 
-              <div style={{ height: 1, background: 'var(--line)', margin: '0 -2px 16px' }} />
+                <div style={{ border: '2px solid var(--line)', borderRadius: 18, padding: '16px 14px', marginBottom: 22 }}>
+                  <SectionLabel>어떤 환경을 좋아하나요?</SectionLabel>
+                  <div style={{ marginBottom: 16 }}>
+                    <Label>물주기</Label>
+                    <div style={{ display: 'flex', gap: 7, marginBottom: 10 }}>
+                      {(['uniform', 'seasonal'] as const).map(mode => {
+                        const active = customWaterMode === mode;
+                        return (
+                          <button key={mode} onClick={() => switchWaterMode(mode)} style={{ flex: 1, padding: '7px 4px', border: `2px solid ${active ? 'var(--ink)' : 'var(--line)'}`, borderRadius: 10, background: active ? 'var(--ink)' : 'transparent', color: active ? 'var(--paper)' : 'var(--soft)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                            {mode === 'uniform' ? '계절 구분 없이' : '계절별로 다르게'}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {customWaterMode === 'seasonal' && (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 10 }}>
+                        {SEASONS.map(s => {
+                          const active = customWaterSeason === s;
+                          const opt = WATER_OPTIONS[customWaterBy[s]];
+                          return (
+                            <button key={s} onClick={() => setCustomWaterSeason(s)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '7px 4px', border: `2px solid ${active ? 'var(--ink)' : 'var(--line)'}`, borderRadius: 12, background: active ? 'var(--ink)' : 'transparent', cursor: 'pointer' }}>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: active ? 'var(--paper)' : 'var(--ink)' }}>{SEASON_KO[s]}</span>
+                              <span style={{ fontSize: 9.5, color: active ? 'rgba(255,255,255,0.6)' : 'var(--soft)', lineHeight: 1.2, textAlign: 'center' }}>{opt.days}일마다</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                      {WATER_OPTIONS.map((opt, i) => {
+                        const refSeason = customWaterMode === 'uniform' ? 'spring' : customWaterSeason;
+                        const sel = customWaterBy[refSeason] === i;
+                        return (
+                          <button key={i} onClick={() => setSeasonWater(i)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 3, padding: '10px 13px', border: `2px solid ${sel ? 'var(--ink)' : 'var(--line)'}`, borderRadius: 14, background: sel ? 'var(--ink)' : 'transparent', cursor: 'pointer', textAlign: 'left' }}>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: sel ? 'var(--paper)' : 'var(--ink)' }}>{opt.label}</span>
+                            <span style={{ fontSize: 11, color: sel ? 'rgba(255,255,255,0.6)' : 'var(--soft)' }}>{opt.days}일마다</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
 
-              {/* 빛 조건 */}
-              <div style={{ marginBottom: 16 }}>
-                <Label>빛 조건</Label>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {LIGHT_OPTIONS.map(opt => {
-                    const sel = customLight === opt;
-                    return (
-                      <button key={opt} onClick={() => setCustomLight(opt)} style={{ flex: 1, padding: '9px 4px', border: `2px solid ${sel ? 'var(--ink)' : 'var(--line)'}`, borderRadius: 12, background: sel ? 'var(--ink)' : 'transparent', color: sel ? 'var(--paper)' : 'var(--soft)', fontSize: 11.5, fontWeight: 700, cursor: 'pointer' }}>
-                        {opt}
-                      </button>
-                    );
-                  })}
+                  <div style={{ height: 1, background: 'var(--line)', margin: '0 -2px 16px' }} />
+                  <div style={{ marginBottom: 16 }}>
+                    <Label>빛 조건</Label>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {LIGHT_OPTIONS.map(opt => {
+                        const sel = customLight === opt;
+                        return (
+                          <button key={opt} onClick={() => setCustomLight(opt)} style={{ flex: 1, padding: '9px 4px', border: `2px solid ${sel ? 'var(--ink)' : 'var(--line)'}`, borderRadius: 12, background: sel ? 'var(--ink)' : 'transparent', color: sel ? 'var(--paper)' : 'var(--soft)', fontSize: 11.5, fontWeight: 700, cursor: 'pointer' }}>
+                            {opt}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div style={{ height: 1, background: 'var(--line)', margin: '0 -2px 16px' }} />
+                  <div>
+                    <Label>온도</Label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 7 }}>
+                      {TEMP_OPTIONS.map(opt => {
+                        const sel = customTemp === opt;
+                        return (
+                          <button key={opt} onClick={() => setCustomTemp(opt)} style={{ padding: '9px 4px', border: `2px solid ${sel ? 'var(--ink)' : 'var(--line)'}`, borderRadius: 12, background: sel ? 'var(--ink)' : 'transparent', color: sel ? 'var(--paper)' : 'var(--soft)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                            {opt}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </>
+            )}
 
-              <div style={{ height: 1, background: 'var(--line)', margin: '0 -2px 16px' }} />
-
-              {/* 온도 */}
-              <div>
-                <Label>온도</Label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 7 }}>
-                  {TEMP_OPTIONS.map(opt => {
-                    const sel = customTemp === opt;
-                    return (
-                      <button key={opt} onClick={() => setCustomTemp(opt)} style={{ padding: '9px 4px', border: `2px solid ${sel ? 'var(--ink)' : 'var(--line)'}`, borderRadius: 12, background: sel ? 'var(--ink)' : 'transparent', color: sel ? 'var(--paper)' : 'var(--soft)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-                        {opt}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>{/* /환경 섹션 */}
-
-            <div onClick={handleAddCustom} style={{ textAlign: 'center', padding: 15, background: 'var(--ink)', color: 'var(--paper)', borderRadius: 18, fontSize: 17, fontWeight: 700, cursor: 'pointer' }}>
-              내 식물로 들이기
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* 종 상세 바텀 시트 */}
-      {selectedSpecies && (
-        <>
-          <div onClick={onClosePreview} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(35,31,24,.32)', zIndex: 50 }} />
-          <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 51, background: 'var(--paper)', borderRadius: '30px 30px 0 0', border: '2.5px solid var(--ink)', borderBottom: 'none', padding: '14px 22px calc(30px + var(--safe-bottom))', maxHeight: '85vh', overflowY: 'auto', animation: 'popIn .26s ease' }}>
-            <div style={{ width: 44, height: 5, borderRadius: 3, background: 'var(--line)', margin: '0 auto 12px' }} />
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div style={{ width: 74, height: 74, flexShrink: 0, color: 'var(--ink)' }} dangerouslySetInnerHTML={{ __html: selectedSpecies.doodle }} />
-              <div>
-                <div style={{ fontFamily: 'Caveat, cursive', fontSize: 34, fontWeight: 700, lineHeight: 1 }}>{selectedSpecies.name}</div>
-                <div style={{ fontSize: 13, color: 'var(--soft)', fontStyle: 'italic', marginTop: 2 }}>{selectedSpecies.sci}</div>
-              </div>
-            </div>
-            <div style={{ fontSize: 14, lineHeight: 1.55, color: 'var(--soft)', margin: '14px 2px' }}>{selectedSpecies.desc}</div>
-            <div style={{ border: '2px solid var(--ink)', borderRadius: 18, overflow: 'hidden', marginBottom: 16 }}>
-              {selectedSpecies.careRows.map((r, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '11px 15px', borderBottom: i < selectedSpecies.careRows.length - 1 ? '1.5px solid var(--line)' : 'none' }}>
-                  <div style={{ width: 24, height: 24, flexShrink: 0, color: 'var(--ink)' }} dangerouslySetInnerHTML={{ __html: r.icon }} />
-                  <div style={{ fontSize: 12.5, color: 'var(--soft)', width: 78, flexShrink: 0 }}>{r.label}</div>
-                  <div style={{ fontSize: 14.5, fontWeight: 600, flex: 1 }}>{r.value}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 12.5, color: 'var(--soft)', fontWeight: 600, marginBottom: 7 }}>이름 지어주기</div>
+            {/* 공통 — 이름 + 색상 + 확인 버튼 */}
+            <div style={{ marginBottom: 12 }}>
+              <Label>이름 지어주기</Label>
               <input
-                value={customName}
-                onChange={e => onCustomNameChange(e.target.value)}
-                placeholder={selectedSpecies.name}
-                style={{ width: '100%', boxSizing: 'border-box', padding: '11px 14px', border: '2px solid var(--ink)', borderRadius: 14, fontFamily: 'Shantell Sans, sans-serif', fontSize: 16, fontWeight: 600, color: 'var(--ink)', background: 'var(--paper)', outline: 'none' }}
+                value={name}
+                onChange={e => { setName(e.target.value); setNameError(false); }}
+                placeholder={isSpecies ? selectedSpecies.name : '내 식물'}
+                style={{ ...inputStyle, borderColor: nameError ? '#CC6B52' : 'var(--ink)' }}
               />
+              {nameError && (
+                <div style={{ fontSize: 12, color: '#CC6B52', fontWeight: 600, marginTop: 6 }}>
+                  식물 이름을 입력해주세요
+                </div>
+              )}
             </div>
-            <div style={{ marginBottom: 18 }}>
-              <div style={{ fontSize: 12.5, color: 'var(--soft)', fontWeight: 600, marginBottom: 9 }}>달력 색상</div>
-              <ColorPicker selected={selectedColor} onChange={onColorChange} />
+            <div style={{ marginBottom: 22 }}>
+              <Label>달력 색상</Label>
+              <ColorPicker selected={color} onChange={setColor} />
             </div>
-            <div onClick={onAdd} style={{ textAlign: 'center', padding: 15, background: 'var(--ink)', color: 'var(--paper)', borderRadius: 18, fontSize: 17, fontWeight: 700, cursor: 'pointer' }}>
+            <div onClick={handleConfirm} style={{ textAlign: 'center', padding: 15, background: 'var(--ink)', color: 'var(--paper)', borderRadius: 18, fontSize: 17, fontWeight: 700, cursor: 'pointer' }}>
               내 식물로 들이기
             </div>
           </div>
@@ -405,7 +394,15 @@ export default function AddScreen({
   );
 }
 
-function ColorPicker({ selected, onChange }: { selected: string; onChange: (c: string) => void }) {
+const inputStyle: React.CSSProperties = {
+  width: '100%', boxSizing: 'border-box',
+  padding: '10px 13px',
+  border: '2px solid var(--ink)', borderRadius: 14,
+  fontFamily: 'Shantell Sans, sans-serif', fontSize: 15, fontWeight: 600,
+  background: 'var(--paper)', color: 'var(--ink)', outline: 'none',
+};
+
+export function ColorPicker({ selected, onChange }: { selected: string; onChange: (c: string) => void }) {
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9 }}>
       {COLOR_PALETTE.map(c => (
@@ -438,5 +435,3 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 function Label({ children }: { children: React.ReactNode }) {
   return <div style={{ fontSize: 12, color: 'var(--soft)', fontWeight: 600, marginBottom: 8 }}>{children}</div>;
 }
-
-export { ColorPicker };

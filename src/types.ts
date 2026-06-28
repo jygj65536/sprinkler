@@ -60,6 +60,7 @@ export interface UserPlant {
   temp: string;
   registeredAt: string;
   wateringLogs: string[];
+  archived?: boolean;
   initialData?: PlantInitialData;
 }
 
