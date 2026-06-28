@@ -1,13 +1,15 @@
 import { useState, useRef } from 'react';
-import { PlantType } from '../types';
+import { Analytics } from '@apps-in-toss/web-framework';
+import { PlantType, HealthKey } from '../types';
 import { EMPTY_POT } from '../doodles';
 
 export interface HomePlant {
   id: string;
   name: string;
   type: PlantType;
+  speciesId: string;
   shelfDoodle: string;
-  status: { label: string; color: string };
+  status: { key: HealthKey; label: string; color: string };
   onOpen: () => void;
 }
 
@@ -53,6 +55,8 @@ export default function HomeScreen({ plants, needWater, summaryDoodle, canSticke
 
   const sprinkleWater = (id: string) => {
     if (sprinkleId) return;
+    const item = plants.find(p => p.id === id);
+    Analytics.click({ log_name: 'click_home_water_plant', plant_id: id, species_id: item?.speciesId ?? '', plant_type: item?.type ?? '', plant_status: item?.status.key ?? 'healthy' });
     setSprinkleId(id);
     if (sprinkleTimer.current) clearTimeout(sprinkleTimer.current);
     sprinkleTimer.current = setTimeout(() => {
@@ -66,7 +70,14 @@ export default function HomeScreen({ plants, needWater, summaryDoodle, canSticke
       {/* 날짜 */}
       <div style={{ fontFamily: 'KJD, sans-serif', fontSize: 16, color: 'var(--soft)', fontWeight: 500, letterSpacing: '.5px' }}>{todayLabel}</div>
       {/* 타이틀 */}
-      <div style={{ fontFamily: 'KJD, sans-serif', fontSize: 42, fontWeight: 700, lineHeight: 1, marginTop: 4 }}>오늘의 식구들</div>
+      {plants.length > 0 ? (
+        <div style={{ fontFamily: 'KJD, sans-serif', fontSize: 42, fontWeight: 700, lineHeight: 1, marginTop: 4 }}>오늘의 식구들</div>
+      ) : (
+        <div style={{ fontFamily: 'KJD, sans-serif', fontSize: 42, fontWeight: 700, lineHeight: 1, marginTop: 4 }}>
+          반가워요!
+          <div style={{ fontFamily: 'KJD, sans-serif', fontSize: 42, fontWeight: 700, lineHeight: 1, marginTop: 4 }}>식물을 추가해 볼까요?</div>
+        </div>
+      )}
 
       {/* 요약 배너 */}
       {plants.length > 0 && (
@@ -83,20 +94,13 @@ export default function HomeScreen({ plants, needWater, summaryDoodle, canSticke
         </div>
       )}
 
-      {/* 식물이 없을 때 안내 */}
-      {plants.length === 0 && (
-        <div onClick={goAdd} style={{ marginTop: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, padding: 15, border: '2.5px dashed var(--soft)', borderRadius: 20, cursor: 'pointer', color: 'var(--soft)', fontSize: 16, fontWeight: 700 }}>
-          <span style={{ fontSize: 22, lineHeight: 1 }}>＋</span> 새로운 식물 들이기
-        </div>
-      )}
-
       {/* 선반 뷰 */}
       {shelves.map((shelf, si) => (
         <div key={si} style={{ marginBottom: 22 }}>
           {/* 화분 */}
           <div style={{ display: 'flex', alignItems: 'flex-end', padding: '0 8px' }}>
             {shelf.map(item => isAdd(item) ? (
-              <div key="__add__" onClick={waterMode ? undefined : goAdd} style={{ flex: 1, display: 'flex', justifyContent: 'center', cursor: waterMode ? 'default' : 'pointer', minWidth: 0, opacity: waterMode ? 0.15 : 0.35 }}>
+              <div key="__add__" onClick={waterMode ? undefined : goAdd} style={{ flex: 1, display: 'flex', justifyContent: 'center', cursor: waterMode ? 'default' : 'pointer', minWidth: 0, opacity: waterMode ? 0.15 : 0.35, marginTop: plants.length === 0 ? 250 : 0 }}>
                 <div style={{ width: 80, height: 86 }} dangerouslySetInnerHTML={{ __html: EMPTY_POT }} />
               </div>
             ) : (
@@ -161,7 +165,11 @@ export default function HomeScreen({ plants, needWater, summaryDoodle, canSticke
       {/* 물뿌리개 FAB — 원 없이 이미지만, 우측 하단 */}
       {plants.length > 0 && (
         <div
-          onClick={toggleWaterMode}
+          onClick={() => {
+            const next = !waterMode;
+            Analytics.click({ log_name: 'click_home_water_fab', water_mode: next ? 'on' : 'off', ...(waterMode ? { resulting_need_water_count: needWater } : {}) });
+            toggleWaterMode();
+          }}
           style={{
             position: 'fixed',
             right: 20,
@@ -197,7 +205,7 @@ export default function HomeScreen({ plants, needWater, summaryDoodle, canSticke
         }}>
           식물을 선택해서 물을 주세요
           <span
-            onClick={toggleWaterMode}
+            onClick={() => { Analytics.click({ log_name: 'click_home_water_done', resulting_need_water_count: needWater }); toggleWaterMode(); }}
             style={{ cursor: 'pointer', border: '1.5px solid rgba(255,255,255,.6)', borderRadius: 10, padding: '2px 11px', fontSize: 12.5 }}
           >완료</span>
         </div>
