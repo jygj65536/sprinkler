@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
-import { PlantType } from '../types';
+import { Analytics } from '@apps-in-toss/web-framework';
+import { PlantType, HealthKey } from '../types';
 import { EMPTY_POT } from '../doodles';
 import { getCurrentSeason } from '../utils';
 import type { WeatherPermission, WeatherInfo } from '../hooks/useWeather';
@@ -8,8 +9,9 @@ export interface HomePlant {
   id: string;
   name: string;
   type: PlantType;
+  speciesId: string;
   shelfDoodle: string;
-  status: { label: string; color: string };
+  status: { key: HealthKey; label: string; color: string };
   archived: boolean;
   onOpen: () => void;
 }
@@ -56,13 +58,17 @@ export default function HomeScreen({ plants, needWater, summaryDoodle, canSticke
   for (let i = 0; i < allItems.length; i += SHELF_SIZE) shelves.push(allItems.slice(i, i + SHELF_SIZE));
 
   const toggleWaterMode = () => {
-    setWaterMode(prev => !prev);
+    const next = !waterMode;
+    if (next) Analytics.click({ log_name: 'click_home_water_fab', plant_count: plants.length, need_water_count: needWater });
+    setWaterMode(next);
     setSprinkleId(null);
     if (sprinkleTimer.current) clearTimeout(sprinkleTimer.current);
   };
 
   const sprinkleWater = (id: string) => {
     if (sprinkleId) return;
+    const plant = plants.find(p => p.id === id);
+    if (plant) Analytics.click({ log_name: 'click_home_water_plant', plant_id: id, species_id: plant.speciesId, plant_type: plant.type, plant_status: plant.status.key });
     setSprinkleId(id);
     if (sprinkleTimer.current) clearTimeout(sprinkleTimer.current);
     sprinkleTimer.current = setTimeout(() => {
@@ -121,7 +127,7 @@ export default function HomeScreen({ plants, needWater, summaryDoodle, canSticke
           {/* 화분 */}
           <div style={{ display: 'flex', alignItems: 'flex-end', padding: '0 8px' }}>
             {shelf.map(item => isAdd(item) ? (
-              <div key="__add__" onClick={waterMode ? undefined : goAdd} style={{ flex: 1, display: 'flex', justifyContent: 'center', cursor: waterMode ? 'default' : 'pointer', minWidth: 0, opacity: waterMode ? 0.15 : 0.35, marginTop: plants.length === 0 ? 250 : 0 }}>
+              <div key="__add__" onClick={waterMode ? undefined : () => { if (plants.length === 0) Analytics.click({ log_name: 'click_home_add_empty' }); goAdd(); }} style={{ flex: 1, display: 'flex', justifyContent: 'center', cursor: waterMode ? 'default' : 'pointer', minWidth: 0, opacity: waterMode ? 0.15 : 0.35, marginTop: plants.length === 0 ? 250 : 0 }}>
                 <div style={{ width: 80, height: 86 }} dangerouslySetInnerHTML={{ __html: EMPTY_POT }} />
               </div>
             ) : (
@@ -228,7 +234,7 @@ export default function HomeScreen({ plants, needWater, summaryDoodle, canSticke
         }}>
           식물을 선택해서 물을 주세요
           <span
-            onClick={toggleWaterMode}
+            onClick={() => { Analytics.click({ log_name: 'click_home_water_done', plant_count: plants.length }); toggleWaterMode(); }}
             style={{ cursor: 'pointer', border: '1.5px solid rgba(255,255,255,.6)', borderRadius: 10, padding: '2px 11px', fontSize: 12.5 }}
           >완료</span>
         </div>

@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { Analytics } from '@apps-in-toss/web-framework';
 import { CalCell, PlantDot } from '../utils';
 
 interface Chip { id: string; name: string; color: string; on: boolean; onToggle: () => void }
-interface Upcoming { name: string; color: string; dueText: string; dueCol: string; rangeText: string; onOpen: () => void }
+interface Upcoming { name: string; color: string; plant_id: string; due_days: number; dueText: string; dueCol: string; rangeText: string; onOpen: () => void }
 interface Weekday { label: string; col: string }
 
 interface Props {
@@ -31,6 +32,24 @@ function fmtPopupDate(iso: string) {
 
 export default function CalendarScreen({ monthLabel, weeks, chips, upcoming, weekdays, onPrevMonth, onNextMonth }: Props) {
   const [popup, setPopup] = useState<Popup | null>(null);
+  const upcomingRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const impressedIds = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        const el = entry.target as HTMLDivElement;
+        const idx = parseInt(el.dataset.idx ?? '-1', 10);
+        const item = upcoming[idx];
+        if (!item || impressedIds.current.has(item.plant_id)) return;
+        impressedIds.current.add(item.plant_id);
+        Analytics.impression({ log_name: 'imp_calendar_upcoming_item', plant_id: item.plant_id, due_days: item.due_days });
+      });
+    }, { threshold: 0.5 });
+    upcomingRefs.current.forEach(el => { if (el) obs.observe(el); });
+    return () => obs.disconnect();
+  }, [upcoming]);
 
   const handleCellClick = (d: CalCell, e: React.MouseEvent<HTMLDivElement>) => {
     if (d.pastItems.length === 0 && d.futureItems.length === 0 && d.overdueItems.length === 0) {
@@ -198,7 +217,7 @@ export default function CalendarScreen({ monthLabel, weeks, chips, upcoming, wee
         <div style={{ marginTop: 20 }}>
           <div style={{ fontFamily: 'KJD, sans-serif', fontSize: 26, fontWeight: 700, marginBottom: 10 }}>다가오는 물주기</div>
           {upcoming.map((u, i) => (
-            <div key={i} onClick={e => { e.stopPropagation(); u.onOpen(); }} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', marginBottom: 9, border: '2px solid var(--ink)', borderRadius: '17px 19px 16px 18px', cursor: 'pointer', background: '#ffffff80' }}>
+            <div key={i} ref={el => { upcomingRefs.current[i] = el; }} data-idx={i} onClick={e => { e.stopPropagation(); u.onOpen(); }} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', marginBottom: 9, border: '2px solid var(--ink)', borderRadius: '17px 19px 16px 18px', cursor: 'pointer', background: '#ffffff80' }}>
               <span style={{ width: 11, height: 11, borderRadius: '50%', background: u.color, flexShrink: 0 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 700 }}>{u.name}</div>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Analytics } from '@apps-in-toss/web-framework';
 import { PlantType, Season, SeasonalNumbers, SeasonalLabels } from '../types';
 import { plantDoodle } from '../doodles';
 import { COLOR_PALETTE } from '../data';
@@ -87,9 +88,8 @@ export default function AddScreen({
   selectedSpecies, onClosePreview, onAdd, onAddCustom, goBack, searchIcon,
 }: Props) {
   // 공유 상태 (이름·색상) — 두 경로 모두 사용
-  const [name,      setName]      = useState('');
-  const [color,     setColor]     = useState(COLOR_PALETTE[0]);
-  const [nameError, setNameError] = useState(false);
+  const [name,  setName]  = useState('');
+  const [color, setColor] = useState(COLOR_PALETTE[0]);
 
   // 직접 입력 전용 상태
   const [showCustom,        setShowCustom]        = useState(false);
@@ -102,15 +102,29 @@ export default function AddScreen({
   const [customLight,       setCustomLight]       = useState<typeof LIGHT_OPTIONS[number]>(LIGHT_OPTIONS[1]);
   const [customTemp,        setCustomTemp]        = useState<typeof TEMP_OPTIONS[number]>(TEMP_DEFAULT);
 
-  // 종 시트가 열릴 때 이름·색상 초기화
+  // 종 시트가 열릴 때 이름·색상 초기화 + impression
   useEffect(() => {
     if (selectedSpecies) {
       setName('');
       setColor(COLOR_PALETTE[0]);
-      setNameError(false);
+      Analytics.impression({ log_name: 'imp_add_species_sheet', species_id: selectedSpecies.id, species_type: selectedSpecies.type });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSpecies?.id]);
+
+  // 커스텀 시트 impression
+  useEffect(() => {
+    if (showCustom) Analytics.impression({ log_name: 'imp_add_custom_sheet', query: query.trim() });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showCustom]);
+
+  // no-result impression (쿼리 있고 결과 없을 때)
+  useEffect(() => {
+    if (query.trim() !== '' && results.length === 0) {
+      Analytics.impression({ log_name: 'imp_add_no_result', query: query.trim() });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, results.length]);
 
   const isSpecies = selectedSpecies !== null;
   const showSheet = isSpecies || showCustom;
@@ -121,9 +135,9 @@ export default function AddScreen({
   };
 
   const openCustom = () => {
+    Analytics.click({ log_name: 'click_add_custom_open', query: query.trim() });
     setName('');
     setColor(COLOR_PALETTE[0]);
-    setNameError(false);
     setCustomSpecies('');
     setCustomSci('');
     setCustomType('foliage');
@@ -136,7 +150,6 @@ export default function AddScreen({
   };
 
   const handleConfirm = () => {
-    if (name.trim() === '') { setNameError(true); return; }
     if (isSpecies) {
       onAdd(name, color);
     } else {
@@ -153,7 +166,7 @@ export default function AddScreen({
         winter: WATER_OPTIONS[customWaterBy.winter].label,
       };
       onAddCustom({
-        name: name.trim() || '내 식물',
+        name: name.trim() || query.trim() || '내 식물',
         speciesName: customSpecies.trim() || query.trim(),
         sci: customSci.trim(),
         type: customType,
@@ -201,6 +214,7 @@ export default function AddScreen({
           <input
             value={query}
             onChange={e => onQueryChange(e.target.value)}
+            onFocus={() => Analytics.click({ log_name: 'click_add_search_bar' })}
             placeholder="식물 이름을 검색해 보세요"
             style={{ border: 'none', outline: 'none', background: 'transparent', fontFamily: 'Shantell Sans, sans-serif', fontSize: 16, fontWeight: 500, color: 'var(--ink)', width: '100%' }}
           />
@@ -370,15 +384,10 @@ export default function AddScreen({
               <Label>이름 지어주기</Label>
               <input
                 value={name}
-                onChange={e => { setName(e.target.value); setNameError(false); }}
-                placeholder={isSpecies ? selectedSpecies.name : '내 식물'}
-                style={{ ...inputStyle, borderColor: nameError ? '#CC6B52' : 'var(--ink)' }}
+                onChange={e => setName(e.target.value)}
+                placeholder={isSpecies ? selectedSpecies.name : (query.trim() || '내 식물')}
+                style={inputStyle}
               />
-              {nameError && (
-                <div style={{ fontSize: 12, color: '#CC6B52', fontWeight: 600, marginTop: 6 }}>
-                  식물 이름을 입력해주세요
-                </div>
-              )}
             </div>
             <div style={{ marginBottom: 22 }}>
               <Label>달력 색상</Label>
