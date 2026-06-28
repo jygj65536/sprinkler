@@ -4,10 +4,11 @@ import { SPECIES_DB, DEMO_PLANTS, COLOR_PALETTE } from './data';
 import type { CustomPlantData } from './screens/Add';
 import { todayISO, getStatus, getDueInfo, addDays, diffDays, buildCalendarWeeks, buildMiniCalendar, fmtDate, parseDate, getCurrentSeason } from './utils';
 import { loadPlants, savePlants } from './storage';
-import { plantDoodle, shelfDoodle, DROP_LIGHT, SEARCH, HOME_NAV, CAL_NAV, CARE_ICONS, SUMMARY_NEED, SUMMARY_OK, CAN_STICKER, DROP_MINI } from './doodles';
+import { plantDoodle, shelfDoodle, DROP_LIGHT, SEARCH, HOME_NAV, CAL_NAV, CARE_ICONS, SUMMARY_NEED, SUMMARY_OK, CAN_STICKER, DROP_MINI, ARCHIVE_NAV, ARCHIVE_DOODLE } from './doodles';
 import HomeScreen from './screens/Home';
 import CalendarScreen from './screens/Calendar';
 import DetailScreen from './screens/Detail';
+import ArchiveScreen from './screens/Archive';
 import AddScreen from './screens/Add';
 import './App.css';
 
@@ -18,7 +19,7 @@ const WEEKDAYS = ['일','월','화','수','목','금','토'].map((l, i) => ({ la
 export default function App() {
   const [plants, setPlants] = useState<UserPlant[]>(DEMO_PLANTS);
   const [screen, setScreen] = useState<Screen>('home');
-  const [lastMain, setLastMain] = useState<'home' | 'calendar'>('home');
+  const [lastMain, setLastMain] = useState<'home' | 'calendar' | 'archive'>('home');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [calYear, setCalYear] = useState(new Date().getFullYear());
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
@@ -57,7 +58,7 @@ export default function App() {
   };
 
   const go = (s: Screen) => {
-    if (s === 'home' || s === 'calendar') setLastMain(s);
+    if (s === 'home' || s === 'calendar' || s === 'archive') setLastMain(s);
     setScreen(s);
   };
 
@@ -109,7 +110,23 @@ export default function App() {
     setPlants(prev => prev.filter(p => p.id !== id));
     setCalVisible(prev => prev.filter(pid => pid !== id));
     go('home');
-    showToast('식물을 보내줬어요 🌿');
+    showToast('식물을 보내줬어요');
+  };
+
+  const archivePlant = (id: string) => {
+    const p = plants.find(x => x.id === id);
+    if (!p) return;
+    setPlants(prev => prev.map(x => x.id === id ? { ...x, archived: true, archivedAt: TODAY } : x));
+    go('archive');
+    showToast(`${p.name}을(를) 보관함으로 옮겼어요`);
+  };
+
+  const unarchivePlant = (id: string) => {
+    const p = plants.find(x => x.id === id);
+    if (!p) return;
+    setPlants(prev => prev.map(x => x.id === id ? { ...x, archived: false, archivedAt: undefined } : x));
+    go('home');
+    showToast(`${p.name}이(가) 다시 식구로 돌아왔어요`);
   };
 
   const addCustomPlant = (data: CustomPlantData) => {
@@ -170,8 +187,9 @@ export default function App() {
     setCalYear(y); setCalMonth(m);
   };
 
-  // ---- Home 데이터 ----
-  const homePlants = plants.map(p => {
+  // ---- Home 데이터 (보관 식물 제외) ----
+  const activePlants = plants.filter(p => !p.archived);
+  const homePlants = activePlants.map(p => {
     const st = getStatus(p, TODAY);
     return {
       id: p.id, name: p.name, type: p.type,
@@ -180,12 +198,28 @@ export default function App() {
       onOpen: () => { setSelectedId(p.id); go('detail'); },
     };
   });
-  const needWater = plants.filter(p => getStatus(p, TODAY).key !== 'healthy').length;
+  const needWater = activePlants.filter(p => getStatus(p, TODAY).key !== 'healthy').length;
+
+  // ---- Archive 데이터 ----
+  const archivedPlants = plants.filter(p => p.archived);
+  const archivePlants = archivedPlants.map(p => {
+    const d = p.archivedAt ? new Date(p.archivedAt) : new Date();
+    const archiveTag = `${d.getMonth() + 1}월 ${d.getDate()}일 보관`;
+    return {
+      id: p.id, name: p.name, type: p.type,
+      shelfDoodle: shelfDoodle(p.type, p.color),
+      archiveTag,
+      onOpen: () => { setSelectedId(p.id); go('detail'); },
+    };
+  });
+  const archiveSummary = archivedPlants.length > 0
+    ? `${archivedPlants.length}개의 식물이 쉬는 중`
+    : '보관 중인 식물이 없어요';
 
   // ---- Calendar 데이터 ----
-  const selPlants = plants.filter(p => calVisible.includes(p.id));
+  const selPlants = activePlants.filter(p => calVisible.includes(p.id));
   const calWeeks = buildCalendarWeeks(calYear, calMonth, selPlants, TODAY);
-  const chips = plants.map(p => ({
+  const chips = activePlants.map(p => ({
     id: p.id, name: p.name, color: p.color,
     on: calVisible.includes(p.id),
     onToggle: () => setCalVisible(prev =>
@@ -279,7 +313,7 @@ export default function App() {
     ],
   } : null;
 
-  const isMain = screen === 'home' || screen === 'calendar';
+  const isMain = screen === 'home' || screen === 'calendar' || screen === 'archive';
   const navPb = `calc(84px + var(--safe-bottom))`;
 
   return (
@@ -316,6 +350,14 @@ export default function App() {
         />
       )}
 
+      {screen === 'archive' && (
+        <ArchiveScreen
+          plants={archivePlants}
+          archiveDoodle={ARCHIVE_DOODLE}
+          archiveSummary={archiveSummary}
+        />
+      )}
+
       {screen === 'add' && (
         <AddScreen
           query={addQuery}
@@ -344,6 +386,10 @@ export default function App() {
           <button onClick={() => go('calendar')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer', color: screen === 'calendar' ? 'var(--ink)' : 'var(--soft)', padding: 0, fontFamily: 'inherit' }}>
             <div style={{ width: 26, height: 26 }} dangerouslySetInnerHTML={{ __html: CAL_NAV }} />
             <span style={{ fontSize: 11, fontWeight: 700 }}>달력</span>
+          </button>
+          <button onClick={() => go('archive')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer', color: screen === 'archive' ? 'var(--ink)' : 'var(--soft)', padding: 0, fontFamily: 'inherit' }}>
+            <div style={{ width: 26, height: 26 }} dangerouslySetInnerHTML={{ __html: ARCHIVE_NAV }} />
+            <span style={{ fontSize: 11, fontWeight: 700 }}>보관함</span>
           </button>
         </div>
       )}
