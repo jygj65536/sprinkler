@@ -91,7 +91,14 @@ export default function HomeScreen({ plants, needWater, summaryDoodle, canSticke
       </div>
 
       {/* 타이틀 */}
-      <div style={{ fontFamily: 'KJD, sans-serif', fontSize: 42, fontWeight: 700, lineHeight: 1, marginTop: 4 }}>오늘의 식구들</div>
+      {plants.length > 0 ? (
+        <div style={{ fontFamily: 'KJD, sans-serif', fontSize: 42, fontWeight: 700, lineHeight: 1, marginTop: 4 }}>오늘의 식구들</div>
+      ) : (
+        <div style={{ fontFamily: 'KJD, sans-serif', fontSize: 42, fontWeight: 700, lineHeight: 1, marginTop: 4 }}>
+          반가워요!
+          <div style={{ fontFamily: 'KJD, sans-serif', fontSize: 42, fontWeight: 700, lineHeight: 1, marginTop: 4 }}>식물을 추가해 볼까요?</div>
+        </div>
+      )}
 
       {/* 요약 배너 */}
       {plants.length > 0 && (
