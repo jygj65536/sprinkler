@@ -115,20 +115,13 @@ export default function HomeScreen({ plants, needWater, summaryDoodle, canSticke
         </div>
       )}
 
-      {/* 식물이 없을 때 안내 */}
-      {plants.length === 0 && (
-        <div onClick={goAdd} style={{ marginTop: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, padding: 15, border: '2.5px dashed var(--soft)', borderRadius: 20, cursor: 'pointer', color: 'var(--soft)', fontSize: 16, fontWeight: 700 }}>
-          <span style={{ fontSize: 22, lineHeight: 1 }}>＋</span> 새로운 식물 들이기
-        </div>
-      )}
-
       {/* 선반 뷰 */}
       {shelves.map((shelf, si) => (
         <div key={si} style={{ marginBottom: 22 }}>
           {/* 화분 */}
           <div style={{ display: 'flex', alignItems: 'flex-end', padding: '0 8px' }}>
             {shelf.map(item => isAdd(item) ? (
-              <div key="__add__" onClick={waterMode ? undefined : goAdd} style={{ flex: 1, display: 'flex', justifyContent: 'center', cursor: waterMode ? 'default' : 'pointer', minWidth: 0, opacity: waterMode ? 0.15 : 0.35 }}>
+              <div key="__add__" onClick={waterMode ? undefined : goAdd} style={{ flex: 1, display: 'flex', justifyContent: 'center', cursor: waterMode ? 'default' : 'pointer', minWidth: 0, opacity: waterMode ? 0.15 : 0.35, marginTop: plants.length === 0 ? 250 : 0 }}>
                 <div style={{ width: 80, height: 86 }} dangerouslySetInnerHTML={{ __html: EMPTY_POT }} />
               </div>
             ) : (
