@@ -1,4 +1,12 @@
-import { UserPlant, HealthStatus, DueInfo } from './types';
+import { UserPlant, HealthStatus, DueInfo, Season } from './types';
+
+export function getCurrentSeason(): Season {
+  const month = new Date().getMonth() + 1;
+  if (month >= 3 && month <= 5) return 'spring';
+  if (month >= 6 && month <= 8) return 'summer';
+  if (month >= 9 && month <= 11) return 'autumn';
+  return 'winter';
+}
 
 export function todayISO(): string {
   return toISO(new Date());
@@ -39,7 +47,7 @@ export function hexAlpha(hex: string, a: number): string {
 export function getStatus(plant: UserPlant, today: string): HealthStatus {
   const last = plant.wateringLogs[plant.wateringLogs.length - 1];
   const since = diffDays(last, today);
-  const ratio = since / plant.intervalDays;
+  const ratio = since / plant.waterIntervalDays[getCurrentSeason()];
   if (ratio < 0.7) return { key: 'healthy', label: '촉촉해요',    color: '#5E8C57', daysSince: since, lastWatered: last };
   if (ratio < 1)   return { key: 'thirsty', label: '곧 목말라요', color: '#C99A3C', daysSince: since, lastWatered: last };
   return               { key: 'urgent',  label: '물 주세요!',  color: '#CC6B52', daysSince: since, lastWatered: last };
@@ -47,7 +55,7 @@ export function getStatus(plant: UserPlant, today: string): HealthStatus {
 
 export function getDueInfo(plant: UserPlant, today: string): DueInfo {
   const last = plant.wateringLogs[plant.wateringLogs.length - 1];
-  const dueDate = addDays(last, plant.intervalDays);
+  const dueDate = addDays(last, plant.waterIntervalDays[getCurrentSeason()]);
   const daysUntil = diffDays(today, dueDate);
   let text: string, color: string;
   if (daysUntil < 0)       { text = `${-daysUntil}일 지났어요`; color = '#CC6B52'; }
@@ -87,7 +95,7 @@ export function buildCalendarWeeks(
     if (selPlants.length === 1) {
       const p = selPlants[0];
       const last = p.wateringLogs[p.wateringLogs.length - 1];
-      const center = addDays(last, p.intervalDays);
+      const center = addDays(last, p.waterIntervalDays[getCurrentSeason()]);
       const lo = addDays(center, -2), hi = addDays(center, 2);
       if (diffDays(lo, iso) >= 0 && diffDays(iso, hi) >= 0 && diffDays(today, iso) > 0) {
         bandBg = hexAlpha(p.color, 0.16);
@@ -96,7 +104,7 @@ export function buildCalendarWeeks(
     } else {
       selPlants.forEach(p => {
         const last = p.wateringLogs[p.wateringLogs.length - 1];
-        const center = addDays(last, p.intervalDays);
+        const center = addDays(last, p.waterIntervalDays[getCurrentSeason()]);
         if (iso === center && diffDays(today, iso) > 0) futureDots.push(p.color);
       });
     }
@@ -135,8 +143,8 @@ export function buildMiniCalendar(plant: UserPlant, year: number, month: number)
     let col = '#5E8C57';
     if (prev) {
       const gap = diffDays(prev, h);
-      col = gap <= plant.intervalDays * 1.15 ? '#5E8C57'
-          : gap <= plant.intervalDays * 1.5  ? '#C99A3C' : '#CC6B52';
+      col = gap <= plant.waterIntervalDays[getCurrentSeason()] * 1.15 ? '#5E8C57'
+          : gap <= plant.waterIntervalDays[getCurrentSeason()] * 1.5  ? '#C99A3C' : '#CC6B52';
     }
     logSet[h] = col;
   });

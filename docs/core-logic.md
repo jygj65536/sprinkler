@@ -12,35 +12,37 @@
 `src/data.ts`의 `SPECIES_DB`에 10종이 하드코딩되어 있다. 유저가 추가하거나 변경할 수 없다.
 
 ```ts
+interface SeasonalNumbers { spring: number; summer: number; autumn: number; winter: number; }
+interface SeasonalLabels  { spring: string; summer: string; autumn: string; winter: string; }
+
 interface PlantSpecies {
-  id: string;          // 예) 'sp_mon'
-  name: string;        // 예) '몬스테라'
-  sci: string;         // 학명. 예) 'Monstera deliciosa'
-  type: PlantType;     // 시각 컴포넌트 구분자 ('monstera' | 'snake' | 'palm' | 'succulent' | 'olive')
-  color: string;       // 이 종을 대표하는 hex 색상. 달력 dot·chip에 사용
-  intervalDays: number; // 권장 물주기 주기(일). 건강 상태 계산의 기준값
-  light: string;       // 빛 조건 텍스트
-  waterTiming: string; // 물 주는 시점 텍스트
-  temp: string;        // 적정 온도 텍스트
-  amount: string;      // 1회 물 양 텍스트
-  desc: string;        // 종 설명 (식물 추가 화면 바텀싯)
+  id: string;                        // 예) 'sp_mon' (PoC) / cntntsNo (API)
+  name: string;                      // 예) '몬스테라'
+  sci: string;                       // 학명. 예) 'Monstera deliciosa'
+  type: PlantType;                   // 외관 타입 12종 (fern·orchid·palm·succulent·bulb·vine·tropical·foliage·flowering·shrub·tree·herb)
+  color: string;                     // 이 종을 대표하는 hex 색상. 달력 dot·chip에 사용
+  waterIntervalDays: SeasonalNumbers; // 계절별 권장 물주기 간격(일)
+  waterTiming: SeasonalLabels;       // 계절별 물 주는 시점 레이블
+  light: string;                     // 빛 조건 텍스트
+  temp: string;                      // 생육 적정 온도 텍스트
+  desc: string;                      // 종 설명 (식물 추가 화면 바텀싯)
 }
 ```
 
-현재 등록된 10종과 주기:
+현재 등록된 10종 (PoC 하드코딩 데이터, 계절별 값 동일):
 
-| 종 | `intervalDays` | `type` |
-|----|--------------|--------|
-| 몬스테라 | 7일 | monstera |
-| 스투키 | 14일 | snake |
+| 종 | `waterIntervalDays` (전 계절) | `type` |
+|----|--------------------------|--------|
+| 몬스테라 | 7일 | tropical |
+| 스투키 | 14일 | foliage |
 | 테이블야자 | 5일 | palm |
 | 다육이 | 21일 | succulent |
-| 올리브나무 | 9일 | olive |
-| 산세베리아 | 14일 | snake |
-| 스파티필름 | 4일 | monstera |
-| 행운목 | 10일 | palm |
-| 율마 | 4일 | olive |
-| 고무나무 | 8일 | monstera |
+| 올리브나무 | 9일 | tree |
+| 산세베리아 | 14일 | foliage |
+| 스파티필름 | 4일 | tropical |
+| 행운목 | 10일 | tree |
+| 율마 | 4일 | tree |
+| 고무나무 | 8일 | tropical |
 
 ### 1-2. UserPlant — 유저의 식물 (동적)
 
@@ -49,6 +51,7 @@ interface PlantSpecies {
 ```ts
 interface UserPlant extends Omit<PlantSpecies, 'desc'> {
   id: string;              // 고유 식별자. 'u_' + Date.now() 형식
+  speciesId: string;       // 원본 종 ID. 기본값 복구 시 SPECIES_DB 참조용
   name: string;            // 유저가 직접 지어준 이름 (기본값: 종 이름)
   registeredAt: string;    // 들인 날짜. ISO 8601 ('YYYY-MM-DD')
   wateringLogs: string[];  // 물 준 날짜 배열. ISO 8601, 오름차순 정렬
@@ -104,10 +107,10 @@ AIT 네이티브 스토리지(`@apps-in-toss/web-framework`의 `Storage`)를 우
 건강 상태의 기준은 **권장 주기 대비 마지막 물주기 경과 비율(ratio)** 이다.
 
 ```
-ratio = 마지막 물주기로부터 경과한 일수 / intervalDays
+ratio = 마지막 물주기로부터 경과한 일수 / waterIntervalDays[currentSeason]
 ```
 
-예) 몬스테라(7일 주기), 마지막 물주기 5일 전 → ratio = 5/7 ≈ 0.71
+예) 몬스테라(봄 7일 주기), 마지막 물주기 5일 전 → ratio = 5/7 ≈ 0.71
 
 ### 3-2. 상태 분류
 
@@ -126,10 +129,19 @@ ratio 0          0.7          1.0
 **구현 (`src/utils.ts:getStatus`):**
 
 ```ts
+function getCurrentSeason(): keyof SeasonalNumbers {
+  const month = new Date().getMonth() + 1;
+  if (month >= 3 && month <= 5) return 'spring';
+  if (month >= 6 && month <= 8) return 'summer';
+  if (month >= 9 && month <= 11) return 'autumn';
+  return 'winter';
+}
+
 function getStatus(plant: UserPlant, today: string): HealthStatus {
   const last = plant.wateringLogs[plant.wateringLogs.length - 1];
   const since = diffDays(last, today);
-  const ratio = since / plant.intervalDays;
+  const season = getCurrentSeason();
+  const ratio = since / plant.waterIntervalDays[season];
 
   if (ratio < 0.7) return { key: 'healthy', label: '촉촉해요',    color: '#5E8C57', ... };
   if (ratio < 1)   return { key: 'thirsty', label: '곧 목말라요', color: '#C99A3C', ... };
@@ -148,11 +160,11 @@ function getStatus(plant: UserPlant, today: string): HealthStatus {
 ### 4-1. 예정일 계산
 
 ```
-dueDate = 마지막 물주기 날짜 + intervalDays
+dueDate = 마지막 물주기 날짜 + waterIntervalDays[currentSeason]
 daysUntil = dueDate - 오늘
 ```
 
-예) 마지막 물주기 6월 13일, intervalDays=7 → dueDate=6월 20일
+예) 마지막 물주기 6월 13일, 여름 waterIntervalDays=7 → dueDate=6월 20일
 
 ### 4-2. 표시 텍스트와 색상
 
@@ -231,9 +243,9 @@ wateringLogs 마지막 항목 === TODAY → slice(0, -1) 로 제거
 
 | 간격 기준 | dot 색상 | 의미 |
 |-----------|---------|------|
-| gap ≤ intervalDays × 1.15 | `#5E8C57` 초록 | 제때 |
-| gap ≤ intervalDays × 1.5 | `#C99A3C` 황토 | 조금 늦음 |
-| gap > intervalDays × 1.5 | `#CC6B52` 빨강 | 많이 늦음 |
+| gap ≤ waterIntervalDays[currentSeason] × 1.15 | `#5E8C57` 초록 | 제때 |
+| gap ≤ waterIntervalDays[currentSeason] × 1.5 | `#C99A3C` 황토 | 조금 늦음 |
+| gap > waterIntervalDays[currentSeason] × 1.5 | `#CC6B52` 빨강 | 많이 늦음 |
 | 첫 번째 기록 | `#5E8C57` 초록 | 기준 없음 |
 
 ---

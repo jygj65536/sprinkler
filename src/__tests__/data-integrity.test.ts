@@ -15,13 +15,11 @@ describe('SPECIES_DB 무결성', () => {
     expect(sp.id).toBeTruthy();
     expect(sp.name).toBeTruthy();
     expect(sp.sci).toBeTruthy();
-    expect(sp.type).toMatch(/^(monstera|snake|palm|succulent|olive)$/);
-    expect(sp.color).toMatch(/^#[0-9A-Fa-f]{6}$/);
-    expect(sp.intervalDays).toBeGreaterThan(0);
+    expect(sp.type).toMatch(/^(fern|orchid|palm|succulent|bulb|vine|tropical|foliage|flowering|shrub|tree|herb|stuckyi|cactus)$/);
+    expect(sp.waterIntervalDays.spring).toBeGreaterThan(0);
     expect(sp.light).toBeTruthy();
-    expect(sp.waterTiming).toBeTruthy();
+    expect(sp.waterTiming.spring).toBeTruthy();
     expect(sp.temp).toBeTruthy();
-    expect(sp.amount).toBeTruthy();
     expect(sp.desc).toBeTruthy();
   });
 
@@ -38,7 +36,7 @@ describe('DEMO_PLANTS 무결성', () => {
 
   it.each(DEMO_PLANTS)('$name: 필수 필드 및 wateringLogs 유효', (p) => {
     expect(p.id).toBeTruthy();
-    expect(p.intervalDays).toBeGreaterThan(0);
+    expect(p.waterIntervalDays.spring).toBeGreaterThan(0);
     expect(p.wateringLogs.length).toBeGreaterThan(0);
     // 날짜 형식 확인
     p.wateringLogs.forEach(log => {

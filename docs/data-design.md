@@ -12,7 +12,7 @@
 
 ### 요구사항
 
-- 사용자가 `intervalDays`, `waterTiming`, `light`, `temp`, `amount` 등을 개별 수정 가능
+- 사용자가 `waterIntervalDays`, `waterTiming`, `light`, `temp`, 등을 개별 수정 가능
 - 수정 후 "기본값으로 되돌리기" 가능
 - 기본값 복구를 위해 **어떤 종인지(speciesId)를 항상 알 수 있어야 함**
 
@@ -47,11 +47,10 @@ function resetToDefault(plant: UserPlant): UserPlant {
   return {
     ...plant,                    // id, speciesId, registeredAt, wateringLogs 보존
     name: plant.name,            // 이름은 사용자가 붙인 것이므로 유지
-    intervalDays: species.intervalDays,
+    waterIntervalDays: species.waterIntervalDays,
     waterTiming: species.waterTiming,
     light: species.light,
     temp: species.temp,
-    amount: species.amount,
   };
 }
 ```
@@ -64,18 +63,31 @@ function resetToDefault(plant: UserPlant): UserPlant {
 ## 1. 현재 PlantSpecies 스키마
 
 ```ts
+interface SeasonalNumbers {
+  spring: number;
+  summer: number;
+  autumn: number;
+  winter: number;
+}
+
+interface SeasonalLabels {
+  spring: string;
+  summer: string;
+  autumn: string;
+  winter: string;
+}
+
 interface PlantSpecies {
-  id: string;           // 식물 고유 ID
-  name: string;         // 한국 통용명
-  sci: string;          // 학명
-  type: PlantType;      // 시각 타입 ('monstera'|'snake'|'palm'|'succulent'|'olive')
-  color: string;        // 대표 색상 hex
-  intervalDays: number; // 권장 물주기 주기(일)
-  light: string;        // 빛 조건 텍스트
-  waterTiming: string;  // 물 주는 시점 텍스트 (짧게)
-  temp: string;         // 적정 온도 텍스트
-  amount: string;       // 1회 물 양 텍스트
-  desc: string;         // 종 설명
+  id: string;                  // 식물 고유 ID
+  name: string;                // 한국 통용명
+  sci: string;                 // 학명
+  type: PlantType;             // 시각 타입 (12종)
+  color: string;               // 대표 색상 hex
+  waterIntervalDays: SeasonalNumbers;  // 계절별 권장 물주기 주기(일)
+  light: string;               // 빛 조건 텍스트
+  waterTiming: SeasonalLabels; // 계절별 물 주는 시점 레이블
+  temp: string;                // 생육 적정 온도 텍스트
+  desc: string;                // 종 설명
 }
 ```
 
@@ -95,18 +107,16 @@ interface PlantSpecies {
 
 ### 2-2. 코드 → 값 변환 필요
 
-#### `intervalDays` ← `watercycle*Code`
+#### `waterIntervalDays` + `waterTiming` ← `watercycle*Code` (4계절 각각)
 
-API는 수치가 아닌 조건 코드를 4계절별로 제공한다.
+API의 4계절 물주기 코드를 그대로 계절별로 보존한다. 두 필드 모두 같은 코드 테이블을 참조한다.
 
-| 코드 | 조건 설명 | 매핑 intervalDays |
-|------|-----------|:----------------:|
-| `053001` | 항상 흙을 축축하게 유지함 (물에 잠김) | **2일** |
-| `053002` | 흙을 촉촉하게 유지함 (물에 잠기지 않도록 주의) | **5일** |
-| `053003` | 토양 표면이 말랐을때 충분히 관수함 | **10일** |
-| `053004` | 화분 흙 대부분 말랐을때 충분히 관수함 | **21일** |
-
-**계절 선택 전략**: 봄·가을 코드를 기준으로 한다. 봄(`watercycleSprngCode`)과 가을(`watercycleAutumnCode`)이 다르면 두 값의 평균을 취한다. 여름·겨울은 극단값이라 UX상 적합하지 않다.
+| 코드 | 조건 설명 | `waterIntervalDays` | `waterTiming` (앱 표시) |
+|------|-----------|:--------------:|------------------------|
+| `053001` | 항상 흙을 축축하게 유지함 (물에 잠김) | **2일** | 항상 촉촉하게 |
+| `053002` | 흙을 촉촉하게 유지함 (물에 잠기지 않도록 주의) | **5일** | 촉촉하게 유지 |
+| `053003` | 토양 표면이 말랐을때 충분히 관수함 | **10일** | 겉흙 마르면 |
+| `053004` | 화분 흙 대부분 말랐을때 충분히 관수함 | **21일** | 흙 대부분 마르면 |
 
 ```ts
 const WATER_CODE_DAYS: Record<string, number> = {
@@ -116,33 +126,46 @@ const WATER_CODE_DAYS: Record<string, number> = {
   '053004': 21,
 };
 
-function resolveIntervalDays(sprng: string, autumn: string): number {
-  const a = WATER_CODE_DAYS[sprng] ?? 10;
-  const b = WATER_CODE_DAYS[autumn] ?? 10;
-  return Math.round((a + b) / 2);
-}
-```
-
----
-
-#### `waterTiming` ← `watercycleSprngCodeNm`
-
-API의 코드명은 길다 (25자 이상). 앱 UI는 짧은 텍스트가 필요하다.
-
-| 코드 | API 코드명 (원문) | waterTiming (앱 표시) |
-|------|-----------------|----------------------|
-| `053001` | 항상 흙을 축축하게 유지함 (물에 잠김) | **항상 촉촉하게** |
-| `053002` | 흙을 촉촉하게 유지함 (물에 잠기지 않도록 주의) | **촉촉하게 유지** |
-| `053003` | 토양 표면이 말랐을때 충분히 관수함 | **겉흙 마르면** |
-| `053004` | 화분 흙 대부분 말랐을때 충분히 관수함 | **흙 대부분 마르면** |
-
-```ts
 const WATER_CODE_LABEL: Record<string, string> = {
   '053001': '항상 촉촉하게',
   '053002': '촉촉하게 유지',
   '053003': '겉흙 마르면',
   '053004': '흙 대부분 마르면',
 };
+
+function resolveWatering(item: ApiItem) {
+  const codes = {
+    spring: item.watercycleSprngCode,
+    summer: item.watercycleSummerCode,
+    autumn: item.watercycleAutumnCode,
+    winter: item.watercycleWinterCode,
+  };
+  const waterIntervalDays: SeasonalNumbers = {
+    spring: WATER_CODE_DAYS[codes.spring] ?? 10,
+    summer: WATER_CODE_DAYS[codes.summer] ?? 10,
+    autumn: WATER_CODE_DAYS[codes.autumn] ?? 10,
+    winter: WATER_CODE_DAYS[codes.winter] ?? 10,
+  };
+  const waterTiming: SeasonalLabels = {
+    spring: WATER_CODE_LABEL[codes.spring] ?? '겉흙 마르면',
+    summer: WATER_CODE_LABEL[codes.summer] ?? '겉흙 마르면',
+    autumn: WATER_CODE_LABEL[codes.autumn] ?? '겉흙 마르면',
+    winter: WATER_CODE_LABEL[codes.winter] ?? '겉흙 마르면',
+  };
+  return { waterIntervalDays, waterTiming };
+}
+```
+
+**현재 계절 판별**: 앱 런타임에서 `new Date().getMonth()`로 현재 계절을 구해 해당 계절의 값을 사용한다.
+
+```ts
+function getCurrentSeason(): keyof SeasonalNumbers {
+  const month = new Date().getMonth() + 1; // 1~12
+  if (month >= 3 && month <= 5) return 'spring';
+  if (month >= 6 && month <= 8) return 'summer';
+  if (month >= 9 && month <= 11) return 'autumn';
+  return 'winter';
+}
 ```
 
 ---
@@ -169,97 +192,104 @@ const LIGHT_CODE_LABEL: Record<string, string> = {
 
 ---
 
-#### `temp` ← `grwhTpCode` + `winterLwetTpCode`
+#### `temp` ← `grwhTpCode`
 
-두 코드를 조합해 온도 범위를 만든다.
+생육 적정 온도 범위를 그대로 표시한다.
 
-| grwhTpCode | 의미 |
-|-----------|------|
-| `082001` | 10~15℃ |
-| `082002` | 16~20℃ |
-| `082003` | 21~25℃ |
-| `082004` | 26~30℃ |
-
-| winterLwetTpCode | 의미 |
-|-----------------|------|
-| `057001` | 0℃ 이하 |
-| `057002` | 5℃ |
-| `057003` | 7℃ |
-| `057004` | 10℃ |
-| `057005` | 13℃ 이상 |
-
-**변환 전략**: `"최저온도 – 생육온도상한"` 형식으로 조합.
+| 코드 | 의미 | temp (앱 표시) |
+|------|------|--------------|
+| `082001` | 10~15℃ | **10–15°C** |
+| `082002` | 16~20℃ | **16–20°C** |
+| `082003` | 21~25℃ | **21–25°C** |
+| `082004` | 26~30℃ | **26–30°C** |
 
 ```ts
-// 예) grwhTpCode='082002'(16~20℃), winterLwetTpCode='057002'(5℃) → "5–20°C"
-const GRWH_TP_MAX: Record<string, number> = {
-  '082001': 15, '082002': 20, '082003': 25, '082004': 30,
+const GRWH_TP_LABEL: Record<string, string> = {
+  '082001': '10–15°C',
+  '082002': '16–20°C',
+  '082003': '21–25°C',
+  '082004': '26–30°C',
 };
-const WINTER_MIN: Record<string, string> = {
-  '057001': '0', '057002': '5', '057003': '7',
-  '057004': '10', '057005': '13',
-};
-function resolveTemp(grwh: string, winter: string): string {
-  const max = GRWH_TP_MAX[grwh];
-  const min = WINTER_MIN[winter];
-  if (!max || !min) return '정보 없음';
-  return `${min}–${max}°C`;
-}
 ```
 
 ---
 
-### 2-3. 부분 매핑 (품질 차이 있음)
+### 2-3. 가공 필요
 
-#### `desc` ← `fncltyInfo` 또는 `adviseInfo`
+#### `desc` ← `fncltyInfo` + `adviseInfo`
 
-| 현재 desc | API 대안 |
-|-----------|---------|
-| "잎의 갈라진 구멍이 매력적인 식집사 입문 1순위. 통풍을 좋아하고 과습에 약해요." | `fncltyInfo`: 공기정화 기능 등 기능성 나열 / `adviseInfo`: 관리 팁 서술 |
+두 필드를 조합해 하나의 설명 텍스트를 만든다.
 
-**문제**: API 텍스트는 길고 나열식이라 앱 UI 친화적이지 않다. 큐레이션 품질이 떨어진다.  
-**결정**: 1차 릴리즈에는 `adviseInfo`를 사용하되, 100자 이하로 자른다. 장기적으로 편집 레이어를 별도로 관리한다.
+| API 필드 | 내용 성격 |
+|---------|---------|
+| `fncltyInfo` | 공기정화·인테리어 효과 등 기능성 서술 |
+| `adviseInfo` | 관리 팁·주의사항 서술 |
+
+**가공 전략**: `fncltyInfo`를 앞에, `adviseInfo`를 뒤에 붙여 합산 150자 이내로 자른다. 둘 중 하나만 있으면 그 값만 사용한다.
 
 ---
 
-### 2-4. 매핑 불가 — 별도 설계 필요
+### 2-4. 파생 필드
 
-#### `type` (PlantType) — API에 대응 필드 없음
+#### `type` (PlantType) — `fmlNm` + `grwhstleCode` 조합으로 자동 분류
 
-`PlantType`은 순수하게 시각적 목적의 분류다. 농촌진흥청 API에는 이를 대응하는 단일 코드가 없다.
+`PlantType`은 순수하게 **외관** 기준 분류다. `fmlNm`(과명)과 `grwhstleCode`(생육형태) 두 필드를 조합해 12개 type으로 자동 결정한다.
 
-현재 타입과 가장 근접한 API 코드:
+**판별 우선순위**: `grwhstleCode`가 외관을 지배하는 두 케이스는 `fmlNm`보다 먼저 적용.
 
-| PlantType | 특성 | 최근접 API 조건 |
-|-----------|------|----------------|
-| `succulent` | 다육·선인장 | `clCode=072005` (선인장다육식물) 또는 `grwhstleCode=054006` (다육형) |
-| `snake` | 직립·원통형 잎 | `grwhstleCode=054001` (직립형) + 건조 내성 → 규칙 조합 필요 |
-| `palm` | 야자형·방사형 | `fmlCodeNm` 포함 "야자" or `grwhstleCode=054002` (관목형) → 부정확 |
-| `monstera` | 넓은 잎·관엽 | `clCode=072001` (잎보기식물) + 중간광도 → 가장 불명확 |
-| `olive` | 수목형·침엽 | `clCode=072001` + 높은광도 → 역시 불명확 |
+1. `grwhstleCode`에 `054006`(다육형) 포함 → `succulent`
+2. `grwhstleCode`에 `054003`(덩굴성) 포함 → `vine`
+3. 나머지는 `fmlNm` 코드로 결정
 
-**결론**: `succulent`만 코드로 자동 분류 가능. 나머지 4개는 자동 분류 규칙이 신뢰도가 낮다.
-
-**설계 결정**: 빌드 타임 데이터 생성 스크립트(`scripts/fetch-plants.ts`)에서 `cntntsNo` → `type` 수동 오버라이드 맵을 별도 파일로 관리한다.
+| `type` | 한국어명 | 해당 `fmlNm` 과(科) 코드 |
+|--------|---------|------------------------|
+| `fern` | 양치류 | `063002` `063003` `063004` `063022` `063036` `063069` |
+| `orchid` | 난초류 | `063010` |
+| `palm` | 야자·소철·침엽류 | `063060` `063041` `063044` `063009` `063054` `063083` |
+| `succulent` | 다육·선인장류 | `063016` `063062` `063056` + grwhstleCode `054006` 전체 |
+| `bulb` | 구근·알뿌리류 | `063033` `063042` `063090` `063064` |
+| `vine` | 덩굴·포복성 | `063057` `063025` `063011` + grwhstleCode `054003` 전체 |
+| `tropical` | 열대 대엽 관엽 | `063053` `063019` `063040` `063082` |
+| `foliage` | 소형 초본 관엽 | `063012` `063039` `063059` `063043` `063018` `063080` |
+| `flowering` | 초본 꽃보기 | `063005` `063045` `063029` `063026` `063068` `063076` `063086` `063028` `063049` `063067` `063050` `063006` `063085` `063037` `063061` `063008` `063031` `063020` |
+| `shrub` | 목본 꽃보기 관목 | `063048` `063051` `063014` `063046` `063052` `063007` `063013` `063058` |
+| `tree` | 목본 관엽 수목 | `063017` `063024` `063038` `063055` `063015` `063047` `063021` `063088` `063023` |
+| `herb` | 허브·과실·채소류 | `063001` `063063` |
 
 ```ts
-// scripts/type-overrides.ts
-export const TYPE_OVERRIDES: Record<string, PlantType> = {
-  // cntntsNo: type
-  '5555': 'monstera',   // 몬스테라
-  '5556': 'snake',      // 산세베리아
-  // ...
+const FMLNM_TYPE_MAP: Record<string, PlantType> = {
+  '063002': 'fern', '063003': 'fern', '063004': 'fern',
+  '063022': 'fern', '063036': 'fern', '063069': 'fern',
+  '063010': 'orchid',
+  '063060': 'palm', '063041': 'palm', '063044': 'palm',
+  '063009': 'palm', '063054': 'palm', '063083': 'palm',
+  '063016': 'succulent', '063062': 'succulent', '063056': 'succulent',
+  '063033': 'bulb', '063042': 'bulb', '063090': 'bulb', '063064': 'bulb',
+  '063057': 'vine', '063025': 'vine', '063011': 'vine',
+  '063053': 'tropical', '063019': 'tropical', '063040': 'tropical', '063082': 'tropical',
+  '063012': 'foliage', '063039': 'foliage', '063059': 'foliage',
+  '063043': 'foliage', '063018': 'foliage', '063080': 'foliage',
+  '063005': 'flowering', '063045': 'flowering', '063029': 'flowering',
+  '063026': 'flowering', '063068': 'flowering', '063076': 'flowering',
+  '063086': 'flowering', '063028': 'flowering', '063049': 'flowering',
+  '063067': 'flowering', '063050': 'flowering', '063006': 'flowering',
+  '063085': 'flowering', '063037': 'flowering', '063061': 'flowering',
+  '063008': 'flowering', '063031': 'flowering', '063020': 'flowering',
+  '063048': 'shrub', '063051': 'shrub', '063014': 'shrub',
+  '063046': 'shrub', '063052': 'shrub', '063007': 'shrub',
+  '063013': 'shrub', '063058': 'shrub',
+  '063017': 'tree', '063024': 'tree', '063038': 'tree',
+  '063055': 'tree', '063015': 'tree', '063047': 'tree',
+  '063021': 'tree', '063088': 'tree', '063023': 'tree',
+  '063001': 'herb', '063063': 'herb',
 };
-```
 
-자동 분류 폴백 (오버라이드 없을 때):
-
-```ts
-function guessType(item: ApiItem): PlantType {
-  const cl = item.clCode?.split(',') ?? [];
-  const gs = item.grwhstleCode?.split(',') ?? [];
-  if (cl.includes('072005') || gs.includes('054006')) return 'succulent';
-  return 'monstera'; // 기본값
+function resolveType(item: ApiItem): PlantType {
+  const grwhCodes = item.grwhstleCode?.split(',').map(s => s.trim()) ?? [];
+  if (grwhCodes.includes('054006')) return 'succulent';
+  if (grwhCodes.includes('054003')) return 'vine';
+  const fmlCode = item.fmlCode?.trim();
+  return FMLNM_TYPE_MAP[fmlCode ?? ''] ?? 'foliage'; // 미분류 기본값
 }
 ```
 
@@ -271,36 +301,20 @@ function guessType(item: ApiItem): PlantType {
 
 ```ts
 const TYPE_COLORS: Record<PlantType, string> = {
-  monstera:  '#5E8C57',
-  snake:     '#5B7F91',
+  fern:      '#4A7C59',
+  orchid:    '#9B59B6',
   palm:      '#C2873B',
   succulent: '#A0698C',
-  olive:     '#87873F',
+  bulb:      '#E8A87C',
+  vine:      '#6B8E5E',
+  tropical:  '#2E7D52',
+  foliage:   '#5E8C57',
+  flowering: '#D4618A',
+  shrub:     '#C0392B',
+  tree:      '#87873F',
+  herb:      '#8FBC8F',
 };
 ```
-
----
-
-#### `amount` — API에 완전히 없음
-
-1회 물 양(`amount`)에 대응하는 API 필드가 존재하지 않는다.
-
-**현재 값**: "한 컵 (250ml)", "반 컵 (120ml)", "조금 (60ml)", "한 컵 반 (350ml)"
-
-**대안 1 (채택)**: `intervalDays`(물주기 코드)로 추론. 자주 줘야 하는 식물일수록 양이 많다는 가정.
-
-```ts
-const AMOUNT_BY_WATER_CODE: Record<string, string> = {
-  '053001': '충분히 (물에 잠길 만큼)',
-  '053002': '한 컵 반 (350ml)',
-  '053003': '한 컵 (250ml)',
-  '053004': '조금 (60ml)',
-};
-```
-
-**대안 2**: 필드 제거. 물 양은 화분 크기에 따라 달라지므로 고정값이 무의미하다는 관점.
-
-현재는 대안 1을 선택. 향후 UX 검토 후 제거 가능.
 
 ---
 
@@ -312,8 +326,10 @@ const AMOUNT_BY_WATER_CODE: Record<string, string> = {
 scripts/fetch-plants.ts
     ├─ 전체 식물 목록 페이징 조회 (gardenList)
     ├─ 각 cntntsNo에 대해 상세 조회 (gardenDtl)
-    ├─ 필드 변환 (코드 → 값, 텍스트 정규화)
-    ├─ type 결정 (TYPE_OVERRIDES 우선, 없으면 guessType)
+    ├─ 필드 변환: resolveWatering / LIGHT_CODE_LABEL / GRWH_TP_LABEL
+    ├─ type 결정: resolveType (grwhstleCode 우선 → fmlNm 매핑)
+    ├─ color 결정: TYPE_COLORS[type]
+    ├─ desc 생성: fncltyInfo + adviseInfo 조합 후 150자 truncate
     └─ SPECIES_DB 배열 생성 → src/data.ts 덮어쓰기
 ```
 
@@ -329,11 +345,10 @@ scripts/fetch-plants.ts
 | `id` | `cntntsNo` | 쉬움 | 직접 사용 |
 | `name` | `distbNm` / `cntntsSj` | 쉬움 | 직접 사용 |
 | `sci` | `plntbneNm` | 쉬움 | 직접 사용 |
-| `intervalDays` | `watercycle*Code` | 보통 | 코드→일수 고정 매핑 |
-| `waterTiming` | `watercycleSprngCode` | 보통 | 코드→짧은 레이블 매핑 |
+| `waterIntervalDays` | `watercycle*Code` × 4계절 | 보통 | 코드→일수 계절별 매핑 |
+| `waterTiming` | `watercycle*Code` × 4계절 | 보통 | 코드→짧은 레이블 계절별 매핑 |
 | `light` | `lighttdemanddoCode` | 보통 | 코드→서술형 매핑 |
-| `temp` | `grwhTpCode` + `winterLwetTpCode` | 보통 | 두 코드 조합 포맷 |
-| `desc` | `adviseInfo` / `fncltyInfo` | 어려움 | API 텍스트 자르기 (품질↓) |
-| `type` | 없음 | 어려움 | 수동 오버라이드 맵 필수 |
+| `temp` | `grwhTpCode` | 쉬움 | 코드→범위 텍스트 매핑 |
+| `desc` | `fncltyInfo` + `adviseInfo` | 보통 | 두 필드 합산 후 150자 truncate |
+| `type` | `fmlNm` + `grwhstleCode` | 보통 | 코드 조합 자동 분류 (12종) |
 | `color` | 없음 | 쉬움 | `type`에서 고정 파생 |
-| `amount` | 없음 | 보통 | 물주기 코드로 추론 |

@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { UserPlant, Screen } from './types';
-import { SPECIES_DB, DEMO_PLANTS } from './data';
-import { todayISO, getStatus, getDueInfo, addDays, diffDays, buildCalendarWeeks, buildMiniCalendar, fmtDate, parseDate } from './utils';
+import { UserPlant, Screen, PlantInitialData } from './types';
+import { SPECIES_DB, DEMO_PLANTS, COLOR_PALETTE } from './data';
+import type { CustomPlantData } from './screens/Add';
+import { todayISO, getStatus, getDueInfo, addDays, diffDays, buildCalendarWeeks, buildMiniCalendar, fmtDate, parseDate, getCurrentSeason } from './utils';
 import { loadPlants, savePlants } from './storage';
-import { plantDoodle, shelfDoodle, DROP, DROP_LIGHT, SEARCH, HOME_NAV, CAL_NAV, CARE_ICONS, SUMMARY_NEED, SUMMARY_OK } from './doodles';
+import { plantDoodle, shelfDoodle, DROP_LIGHT, SEARCH, HOME_NAV, CAL_NAV, CARE_ICONS, SUMMARY_NEED, SUMMARY_OK } from './doodles';
 import HomeScreen from './screens/Home';
 import CalendarScreen from './screens/Calendar';
 import DetailScreen from './screens/Detail';
@@ -25,6 +26,7 @@ export default function App() {
   const [addQuery, setAddQuery] = useState('');
   const [addSelId, setAddSelId] = useState<string | null>(null);
   const [addCustomName, setAddCustomName] = useState('');
+  const [addColor, setAddColor] = useState(COLOR_PALETTE[0]);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -42,8 +44,11 @@ export default function App() {
 
   // 식물 변경 시 저장
   useEffect(() => {
-    if (loaded) savePlants(plants);
-  }, [plants, loaded]);
+    if (!loaded) return;
+    savePlants(plants).catch(() => {
+      showToast('저장 실패 ⚠️ 데이터가 보관되지 않을 수 있어요');
+    });
+  }, [plants, loaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -56,26 +61,48 @@ export default function App() {
     setScreen(s);
   };
 
-  const waterPlant = (id: string) => {
-    const p = plants.find(x => x.id === id);
-    if (!p) return;
-    const last = p.wateringLogs[p.wateringLogs.length - 1];
-    if (last === TODAY) {
-      showToast('오늘 이미 기록됐어요');
-      return;
-    }
-    const ratio = diffDays(last, TODAY) / p.intervalDays;
-    setPlants(prev => prev.map(pl => pl.id !== id ? pl : { ...pl, wateringLogs: [...pl.wateringLogs, TODAY] }));
-    showToast(ratio < 0.4 ? `${p.name} 물 줬어요 · 과습 주의 💧` : `${p.name} 물 주기 완료!`);
+  const waterMultiple = (ids: string[]) => {
+    const targets = plants.filter(p => ids.includes(p.id) && p.wateringLogs[p.wateringLogs.length - 1] !== TODAY);
+    if (targets.length === 0) { showToast('모두 오늘 이미 기록됐어요'); return; }
+    setPlants(prev => prev.map(p => targets.some(t => t.id === p.id) ? { ...p, wateringLogs: [...p.wateringLogs, TODAY] } : p));
+    showToast(targets.length === 1 ? `${targets[0].name} 물 주기 완료! 💧` : `${targets.length}개 식물에게 물 줬어요 💧`);
   };
 
   const cancelWatering = (id: string) => {
     setPlants(prev => prev.map(p => {
       if (p.id !== id) return p;
       if (p.wateringLogs[p.wateringLogs.length - 1] !== TODAY) return p;
+      if (p.wateringLogs.length <= 1) return p;
       return { ...p, wateringLogs: p.wateringLogs.slice(0, -1) };
     }));
     showToast('물주기 취소했어요');
+  };
+
+  const editFirstWatering = (id: string, date: string) => {
+    setPlants(prev => prev.map(p => {
+      if (p.id !== id) return p;
+      const logs = [...p.wateringLogs];
+      logs[0] = date;
+      logs.sort();
+      return { ...p, wateringLogs: logs };
+    }));
+    showToast('첫 물주기 날짜를 수정했어요');
+  };
+
+  const editPlant = (id: string, data: PlantInitialData) => {
+    setPlants(prev => prev.map(p => p.id !== id ? p : {
+      ...p,
+      name: data.name,
+      speciesName: data.speciesName,
+      sci: data.sci,
+      type: data.type,
+      color: data.color,
+      waterIntervalDays: data.waterIntervalDays,
+      waterTiming: data.waterTiming,
+      light: data.light,
+      temp: data.temp,
+    }));
+    showToast('저장했어요');
   };
 
   const deletePlant = (id: string) => {
@@ -85,24 +112,55 @@ export default function App() {
     showToast('식물을 보내줬어요 🌿');
   };
 
+  const addCustomPlant = (data: CustomPlantData) => {
+    const np: UserPlant = {
+      id: 'u_' + Date.now(),
+      speciesId: '',
+      speciesName: data.speciesName || data.name,
+      name: data.name,
+      sci: data.sci,
+      type: data.type,
+      color: data.color,
+      waterIntervalDays: data.waterIntervalDays,
+      waterTiming: data.waterTiming,
+      light: data.light,
+      temp: data.temp,
+      registeredAt: TODAY,
+      wateringLogs: [TODAY],
+      initialData: { name: data.name, speciesName: data.speciesName || data.name, sci: data.sci, type: data.type, color: data.color, waterIntervalDays: data.waterIntervalDays, waterTiming: data.waterTiming, light: data.light, temp: data.temp },
+    };
+    setPlants(prev => [...prev, np]);
+    setCalVisible(prev => [...prev, np.id]);
+    setAddQuery('');
+    go('home');
+    showToast('새로운 가족이 되었어요!');
+  };
+
   const addPlant = () => {
     const sp = SPECIES_DB.find(s => s.id === addSelId);
     if (!sp) return;
+    const finalName = addCustomName.trim() || sp.name;
     const np: UserPlant = {
       id: 'u_' + Date.now(),
-      name: addCustomName.trim() || sp.name,
-      sci: sp.sci, type: sp.type, color: sp.color,
-      intervalDays: sp.intervalDays, registeredAt: TODAY,
-      light: sp.light, waterTiming: sp.waterTiming, temp: sp.temp, amount: sp.amount,
+      speciesId: sp.id,
+      speciesName: sp.name,
+      name: finalName,
+      sci: sp.sci, type: sp.type, color: addColor,
+      waterIntervalDays: sp.waterIntervalDays,
+      waterTiming: sp.waterTiming,
+      registeredAt: TODAY,
+      light: sp.light, temp: sp.temp,
       wateringLogs: [TODAY],
+      initialData: { name: finalName, speciesName: sp.name, sci: sp.sci, type: sp.type, color: addColor, waterIntervalDays: sp.waterIntervalDays, waterTiming: sp.waterTiming, light: sp.light, temp: sp.temp },
     };
     setPlants(prev => [...prev, np]);
     setCalVisible(prev => [...prev, np.id]);
     setAddQuery('');
     setAddSelId(null);
     setAddCustomName('');
+    setAddColor(COLOR_PALETTE[0]);
     go('home');
-    showToast(`${np.name} 가족이 되었어요!`);
+    showToast('새로운 가족이 되었어요!');
   };
 
   const shiftMonth = (n: number) => {
@@ -152,37 +210,48 @@ export default function App() {
     const history = [...dp.wateringLogs].reverse().map((h, i) => {
       const origIdx = dp.wateringLogs.length - 1 - i;
       const prev = dp.wateringLogs[origIdx - 1];
+      const isFirst = origIdx === 0;
       let color = '#5E8C57', tag = '첫 물주기', gapText = '기록의 시작';
       if (prev) {
         const gap = diffDays(prev, h);
-        if (gap <= dp.intervalDays * 1.15)     { color = '#5E8C57'; tag = '제때'; }
-        else if (gap <= dp.intervalDays * 1.5) { color = '#C99A3C'; tag = '조금 늦음'; }
+        if (gap <= dp.waterIntervalDays[getCurrentSeason()] * 1.15)     { color = '#5E8C57'; tag = '제때'; }
+        else if (gap <= dp.waterIntervalDays[getCurrentSeason()] * 1.5) { color = '#C99A3C'; tag = '조금 늦음'; }
         else                                    { color = '#CC6B52'; tag = '많이 늦음'; }
         gapText = `${gap}일 만에 줬어요`;
       }
       const dow = '일월화수목금토'[parseDate(h).getDay()];
-      return { dateText: `${fmtDate(h)} (${dow})`, color, tag, gapText };
+      return { dateText: `${fmtDate(h)} (${dow})`, color, tag, gapText, rawDate: h, isFirst };
     });
     const regDate = parseDate(dp.registeredAt);
     return {
-      id: dp.id, name: dp.name, sci: dp.sci, type: dp.type,
+      id: dp.id, name: dp.name, speciesName: dp.speciesName, sci: dp.sci, type: dp.type,
       doodle: plantDoodle(dp.type),
       status: st, due: du,
       bondDays: diffDays(dp.registeredAt, TODAY),
       registeredText: `${regDate.getFullYear()}.${String(regDate.getMonth() + 1).padStart(2, '0')}`,
       careRows: [
         { icon: CARE_ICONS.light,  label: '빛',      value: dp.light },
-        { icon: CARE_ICONS.water,  label: '물 줄 때', value: dp.waterTiming },
+        { icon: CARE_ICONS.water,  label: '물 줄 때', value: dp.waterTiming[getCurrentSeason()] },
         { icon: CARE_ICONS.temp,   label: '온도',     value: dp.temp },
-        { icon: CARE_ICONS.cycle,  label: '물주기',   value: `${dp.intervalDays}일마다` },
-        { icon: CARE_ICONS.amount, label: '물 양',    value: dp.amount },
+        { icon: CARE_ICONS.cycle,  label: '물주기',   value: `${dp.waterIntervalDays[getCurrentSeason()]}일마다` },
       ],
       history,
       miniWeeks: buildMiniCalendar(dp, calYear, calMonth),
       canCancelWatering: dp.wateringLogs[dp.wateringLogs.length - 1] === TODAY,
-      onWater: () => waterPlant(dp.id),
+      editable: {
+        name: dp.name, speciesName: dp.speciesName, sci: dp.sci, type: dp.type, color: dp.color,
+        waterIntervalDays: dp.waterIntervalDays, waterTiming: dp.waterTiming,
+        light: dp.light, temp: dp.temp,
+        initialData: dp.initialData ?? {
+          name: dp.name, speciesName: dp.speciesName, sci: dp.sci, type: dp.type, color: dp.color,
+          waterIntervalDays: dp.waterIntervalDays, waterTiming: dp.waterTiming,
+          light: dp.light, temp: dp.temp,
+        },
+      },
       onCancelWatering: () => cancelWatering(dp.id),
+      onEditFirstWatering: (date: string) => editFirstWatering(dp.id, date),
       onDelete: () => deletePlant(dp.id),
+      onEdit: (data: PlantInitialData) => editPlant(dp.id, data),
     };
   })() : null;
 
@@ -195,16 +264,16 @@ export default function App() {
   };
   const addResults = SPECIES_DB
     .filter(s => !q || s.name.includes(q) || s.sci.toLowerCase().includes(q.toLowerCase()))
-    .map(s => ({ ...s, doodle: plantDoodle(s.type), onSelect: () => selectSpecies(s.id) }));
+    .map(s => ({ ...s, intervalDays: s.waterIntervalDays[getCurrentSeason()], doodle: plantDoodle(s.type), onSelect: () => selectSpecies(s.id) }));
   const addSel = SPECIES_DB.find(s => s.id === addSelId);
   const addSelData = addSel ? {
     ...addSel,
     doodle: plantDoodle(addSel.type),
     careRows: [
       { icon: CARE_ICONS.light,  label: '빛',      value: addSel.light },
-      { icon: CARE_ICONS.water,  label: '물 줄 때', value: addSel.waterTiming },
+      { icon: CARE_ICONS.water,  label: '물 줄 때', value: addSel.waterTiming[getCurrentSeason()] },
       { icon: CARE_ICONS.temp,   label: '온도',     value: addSel.temp },
-      { icon: CARE_ICONS.cycle,  label: '물주기',   value: `${addSel.intervalDays}일마다` },
+      { icon: CARE_ICONS.cycle,  label: '물주기',   value: `${addSel.waterIntervalDays[getCurrentSeason()]}일마다` },
     ],
   } : null;
 
@@ -218,8 +287,8 @@ export default function App() {
           plants={homePlants}
           needWater={needWater}
           summaryDoodle={needWater > 0 ? SUMMARY_NEED : SUMMARY_OK}
-          dropDoodle={DROP}
           goAdd={() => go('add')}
+          onWaterMultiple={waterMultiple}
         />
       )}
 
@@ -239,7 +308,6 @@ export default function App() {
         <DetailScreen
           plant={detailPlant}
           weekdays={WEEKDAYS}
-          dropDoodleLight={DROP_LIGHT}
           goBack={() => go(lastMain)}
         />
       )}
@@ -252,8 +320,11 @@ export default function App() {
           selectedSpecies={addSelData}
           customName={addCustomName}
           onCustomNameChange={setAddCustomName}
+          selectedColor={addColor}
+          onColorChange={setAddColor}
           onClosePreview={() => setAddSelId(null)}
           onAdd={addPlant}
+          onAddCustom={addCustomPlant}
           goBack={() => go(lastMain)}
           searchIcon={SEARCH}
         />
@@ -276,8 +347,7 @@ export default function App() {
 
       {/* 토스트 */}
       {toast && (
-        <div style={{ position: 'fixed', bottom: 104, left: '50%', transform: 'translateX(-50%)', zIndex: 60, background: 'var(--ink)', color: 'var(--paper)', padding: '11px 20px', borderRadius: 16, fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap', animation: 'toastIn .3s ease', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ width: 15, height: 17, display: 'inline-block' }} dangerouslySetInnerHTML={{ __html: DROP_LIGHT }} />
+        <div style={{ position: 'fixed', bottom: 104, left: '50%', transform: 'translateX(-50%)', zIndex: 60, background: 'var(--ink)', color: 'var(--paper)', padding: '11px 20px', borderRadius: 16, fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap', animation: 'toastIn .3s ease' }}>
           {toast}
         </div>
       )}

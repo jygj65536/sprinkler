@@ -18,7 +18,11 @@ export async function savePlants(plants: UserPlant[]): Promise<void> {
   const raw = JSON.stringify(plants);
   try {
     await Storage.setItem(KEY, raw);
-  } catch {
+    return;
+  } catch { /* Native storage failed, try localStorage */ }
+  try {
     localStorage.setItem(KEY, raw);
+  } catch {
+    throw new Error('저장에 실패했어요');
   }
 }

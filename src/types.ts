@@ -1,35 +1,66 @@
-export type PlantType = 'monstera' | 'snake' | 'palm' | 'succulent' | 'olive';
+export type PlantType =
+  | 'fern' | 'orchid' | 'palm' | 'succulent' | 'bulb' | 'vine'
+  | 'tropical' | 'foliage' | 'flowering' | 'shrub' | 'tree' | 'herb'
+  | 'stuckyi' | 'cactus';
+
 export type HealthKey = 'healthy' | 'thirsty' | 'urgent';
 export type Screen = 'home' | 'calendar' | 'detail' | 'add';
 export type DetailView = 'list' | 'cal';
+export type Season = 'spring' | 'summer' | 'autumn' | 'winter';
+
+export interface SeasonalNumbers {
+  spring: number;
+  summer: number;
+  autumn: number;
+  winter: number;
+}
+
+export interface SeasonalLabels {
+  spring: string;
+  summer: string;
+  autumn: string;
+  winter: string;
+}
 
 export interface PlantSpecies {
   id: string;
   name: string;
   sci: string;
   type: PlantType;
-  color: string;
-  intervalDays: number;
+  waterIntervalDays: SeasonalNumbers;
+  waterTiming: SeasonalLabels;
   light: string;
-  waterTiming: string;
   temp: string;
-  amount: string;
   desc: string;
+}
+
+export interface PlantInitialData {
+  name: string;
+  speciesName: string;
+  sci: string;
+  type: PlantType;
+  color: string;
+  waterIntervalDays: SeasonalNumbers;
+  waterTiming: SeasonalLabels;
+  light: string;
+  temp: string;
 }
 
 export interface UserPlant {
   id: string;
-  name: string;
+  speciesId: string;
+  speciesName: string; // DB에서 가져온 종명 (API cntntsSj)
+  name: string;        // 사용자가 붙인 이름
   sci: string;
   type: PlantType;
   color: string;
-  intervalDays: number;
-  registeredAt: string;
+  waterIntervalDays: SeasonalNumbers;
+  waterTiming: SeasonalLabels;
   light: string;
-  waterTiming: string;
   temp: string;
-  amount: string;
+  registeredAt: string;
   wateringLogs: string[];
+  initialData?: PlantInitialData;
 }
 
 export interface HealthStatus {

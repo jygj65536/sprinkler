@@ -14,10 +14,12 @@ import { UserPlant } from '../types';
 // 테스트용 기본 식물 (물주기 7일 주기)
 const makePlant = (overrides: Partial<UserPlant> = {}): UserPlant => ({
   id: 'test', name: '테스트', sci: 'Test plant',
-  type: 'monstera', color: '#5E8C57',
-  intervalDays: 7,
+  speciesId: 'sp_test',
+  type: 'tropical', color: '#5E8C57',
+  waterIntervalDays: { spring: 7, summer: 7, autumn: 7, winter: 7 },
+  waterTiming: { spring: '겉흙 마르면', summer: '겉흙 마르면', autumn: '겉흙 마르면', winter: '겉흙 마르면' },
   registeredAt: '2026-01-01',
-  light: '간접광', waterTiming: '겉흙 마르면', temp: '20°C', amount: '250ml',
+  light: '간접광', temp: '20°C',
   wateringLogs: ['2026-06-13'],
   ...overrides,
 });
@@ -126,8 +128,8 @@ describe('getDueInfo — 물주기 예정일', () => {
     expect(d.color).toBe('#CC6B52');
   });
 
-  it('dueDate는 마지막 물주기 + intervalDays', () => {
-    const p = makePlant({ wateringLogs: ['2026-06-10'], intervalDays: 7 });
+  it('dueDate는 마지막 물주기 + waterIntervalDays', () => {
+    const p = makePlant({ wateringLogs: ['2026-06-10'] });
     expect(getDueInfo(p, TODAY).dueDate).toBe('2026-06-17');
   });
 });
@@ -165,7 +167,7 @@ describe('buildCalendarWeeks — 달력 그리드', () => {
 
   it('복수 식물: futureDots 사용 (band 없음)', () => {
     const p1 = makePlant({ id: 'a', wateringLogs: ['2026-06-13'], color: '#5E8C57' });
-    const p2 = makePlant({ id: 'b', wateringLogs: ['2026-06-14'], color: '#C2873B', intervalDays: 7 });
+    const p2 = makePlant({ id: 'b', wateringLogs: ['2026-06-14'], color: '#C2873B' });
     const weeks = buildCalendarWeeks(2026, 5, [p1, p2], '2026-06-19');
     const dueCells = weeks.flat().filter(c => c.futureDots.length > 0);
     expect(dueCells.length).toBeGreaterThan(0);
@@ -188,14 +190,14 @@ describe('buildMiniCalendar — 상세 화면 달력', () => {
   });
 
   it('제때 물주기: 초록색 dot', () => {
-    const p = makePlant({ wateringLogs: ['2026-06-06', '2026-06-13'], intervalDays: 7 }); // 7일 만에 줌
+    const p = makePlant({ wateringLogs: ['2026-06-06', '2026-06-13'] }); // 7일 만에 줌
     const weeks = buildMiniCalendar(p, 2026, 5);
     const cell = weeks.flat().find(c => c.dot && c.dotCol === '#5E8C57');
     expect(cell).toBeTruthy();
   });
 
   it('늦은 물주기: 빨간색 dot', () => {
-    const p = makePlant({ wateringLogs: ['2026-06-01', '2026-06-20'], intervalDays: 7 }); // 19일 만에 줌
+    const p = makePlant({ wateringLogs: ['2026-06-01', '2026-06-20'] }); // 19일 만에 줌
     const weeks = buildMiniCalendar(p, 2026, 5);
     const cell = weeks.flat().find(c => c.dot && c.dotCol === '#CC6B52');
     expect(cell).toBeTruthy();
