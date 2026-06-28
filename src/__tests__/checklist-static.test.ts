@@ -99,11 +99,19 @@ describe('[화면 제어] Safe Area', () => {
     expect(indexHtml).toMatch(/viewport-fit\s*=\s*cover/);
   });
 
-  it('CSS에 env(safe-area-inset 사용', () => {
+  it('CSS에 env(safe-area-inset 사용 (CSS fallback)', () => {
     const cssContent = srcFiles
       .filter(f => f.endsWith('.css'))
       .map(f => readFileSync(f, 'utf-8')).join('\n');
     expect(cssContent).toMatch(/env\s*\(\s*safe-area-inset/);
+  });
+
+  it('SDK SafeAreaInsets 초기화 (native bridge 제공 시 CSS 변수 덮어쓰기)', () => {
+    const tsContent = srcFiles
+      .filter(f => f.endsWith('.ts') || f.endsWith('.tsx'))
+      .map(f => readFileSync(f, 'utf-8')).join('\n');
+    expect(tsContent).toMatch(/SafeAreaInsets\.get\(\)/);
+    expect(tsContent).toMatch(/SafeAreaInsets\.subscribe/);
   });
 
   it('TSX에서 safe-area CSS 변수 참조', () => {

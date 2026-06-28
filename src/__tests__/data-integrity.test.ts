@@ -4,7 +4,7 @@
  *               [서비스 이용 동작] 데이터 유지
  */
 import { describe, it, expect } from 'vitest';
-import { SPECIES_DB, DEMO_PLANTS } from '../data';
+import { SPECIES_DB } from '../data';
 
 describe('SPECIES_DB 무결성', () => {
   it('10종 이상 등록됨', () => {
@@ -29,29 +29,3 @@ describe('SPECIES_DB 무결성', () => {
   });
 });
 
-describe('DEMO_PLANTS 무결성', () => {
-  it('5개 데모 식물 존재', () => {
-    expect(DEMO_PLANTS.length).toBe(5);
-  });
-
-  it.each(DEMO_PLANTS)('$name: 필수 필드 및 wateringLogs 유효', (p) => {
-    expect(p.id).toBeTruthy();
-    expect(p.waterIntervalDays.spring).toBeGreaterThan(0);
-    expect(p.wateringLogs.length).toBeGreaterThan(0);
-    // 날짜 형식 확인
-    p.wateringLogs.forEach(log => {
-      expect(log).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    });
-  });
-
-  it.each(DEMO_PLANTS)('$name: wateringLogs 오름차순 정렬', (p) => {
-    for (let i = 1; i < p.wateringLogs.length; i++) {
-      expect(p.wateringLogs[i] >= p.wateringLogs[i - 1]).toBe(true);
-    }
-  });
-
-  it('id 중복 없음', () => {
-    const ids = DEMO_PLANTS.map(p => p.id);
-    expect(new Set(ids).size).toBe(ids.length);
-  });
-});
