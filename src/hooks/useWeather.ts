@@ -64,15 +64,21 @@ export function useWeather() {
       if (cached) { setWeather(cached); setPermission('granted'); return; }
     } catch {}
 
+    let pos: Awaited<ReturnType<typeof getCurrentLocation>>;
     try {
-      const pos = await getCurrentLocation({ accuracy: Accuracy.Balanced });
-      const info = await fetchWeather(pos.coords.latitude, pos.coords.longitude);
-      setWeather(info);
-      setPermission('granted');
-      saveCache(info).catch(() => {});
+      pos = await getCurrentLocation({ accuracy: Accuracy.Balanced });
     } catch {
       setPermission('denied');
+      return;
     }
+
+    // Location granted — don't revert to denied if weather API fails
+    setPermission('granted');
+    try {
+      const info = await fetchWeather(pos.coords.latitude, pos.coords.longitude);
+      setWeather(info);
+      saveCache(info).catch(() => {});
+    } catch {}
   }, []);
 
   useEffect(() => {
@@ -97,8 +103,10 @@ export function useWeather() {
   const requestPermission = useCallback(async () => {
     setPermission('loading');
     try {
-      const result = await getCurrentLocation.openPermissionDialog();
-      if (result === 'allowed') {
+      await getCurrentLocation.openPermissionDialog();
+      // Re-check actual permission status — don't rely on return value
+      const status = await getCurrentLocation.getPermission();
+      if (status === 'allowed') {
         await loadWeather();
       } else {
         setPermission('denied');
