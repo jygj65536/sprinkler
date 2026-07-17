@@ -37,6 +37,12 @@ export default function App() {
   const [waterConfirm, setWaterConfirm] = useState<{ id: string; name: string } | null>(null);
   const { weather, permission: weatherPermission, requestPermission: requestWeather } = useWeather();
 
+  const handleRequestWeather = () => {
+    requestWeather(() => {
+      showToast('설정 앱 > 토스 > 위치에서 권한을 켜주세요');
+    });
+  };
+
   // 저장된 식물 불러오기 + userKey 발급 + 알림 스케줄 동기화
   useEffect(() => {
     Promise.all([loadPlants(), getOrCreateUserKey()]).then(([saved, key]) => {
@@ -389,7 +395,7 @@ export default function App() {
           onWaterOne={id => waterMultiple([id])}
           weather={weather}
           weatherPermission={weatherPermission}
-          onRequestWeather={requestWeather}
+          onRequestWeather={handleRequestWeather}
         />
       )}
 

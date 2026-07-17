@@ -100,9 +100,19 @@ export function useWeather() {
     return () => { cancelled = true; };
   }, [loadWeather]);
 
-  const requestPermission = useCallback(async () => {
+  const requestPermission = useCallback(async (onStillDenied?: () => void) => {
     setPermission('loading');
     try {
+      // iOS는 사용자가 한 번 거부하면 시스템 권한 다이얼로그를 다시 띄우지 않고
+      // openPermissionDialog()를 조용히 'denied'로 즉시 반환한다 (화면상 아무 반응 없음).
+      // 이미 거부된 상태라면 다이얼로그 호출을 건너뛰고 바로 안내한다.
+      const current = await getCurrentLocation.getPermission();
+      if (current === 'denied') {
+        setPermission('denied');
+        onStillDenied?.();
+        return;
+      }
+
       await getCurrentLocation.openPermissionDialog();
       // Re-check actual permission status — don't rely on return value
       const status = await getCurrentLocation.getPermission();
@@ -110,9 +120,11 @@ export function useWeather() {
         await loadWeather();
       } else {
         setPermission('denied');
+        onStillDenied?.();
       }
     } catch {
       setPermission('denied');
+      onStillDenied?.();
     }
   }, [loadWeather]);
 
