@@ -125,7 +125,7 @@ export default function App() {
       const logs = [...p.wateringLogs];
       logs[0] = date;
       logs.sort();
-      return { ...p, wateringLogs: logs };
+      return { ...p, wateringLogs: logs, registeredAt: date };
     }));
     showToast('첫 물주기 날짜를 수정했어요');
   };
@@ -323,7 +323,7 @@ export default function App() {
       doodle: plantDoodle(dp.type),
       archived: !!dp.archived,
       status: st, due: du,
-      bondDays: diffDays(dp.registeredAt, TODAY),
+      bondDays: diffDays(dp.registeredAt, TODAY) + 1,
       registeredText: `${regDate.getFullYear()}.${String(regDate.getMonth() + 1).padStart(2, '0')}`,
       careRows: [
         { icon: CARE_ICONS.light,  label: '빛',      value: dp.light },

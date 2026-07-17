@@ -59,6 +59,26 @@ function cancelWatering(
   return { plants: next, toast: '물주기 취소했어요' };
 }
 
+// App.tsx의 editFirstWatering 로직 (첫 물주기 날짜 수정 시 registeredAt도 함께 갱신)
+function editFirstWatering(
+  plants: UserPlant[],
+  id: string,
+  date: string,
+): UserPlant[] {
+  return plants.map(p => {
+    if (p.id !== id) return p;
+    const logs = [...p.wateringLogs];
+    logs[0] = date;
+    logs.sort();
+    return { ...p, wateringLogs: logs, registeredAt: date };
+  });
+}
+
+// App.tsx detailPlant의 bondDays 계산 (등록일 당일 = 1일째)
+function bondDays(registeredAt: string, today: string): number {
+  return diffDays(registeredAt, today) + 1;
+}
+
 function deletePlant(
   plants: UserPlant[],
   calVisible: string[],
@@ -162,6 +182,25 @@ describe('[UX] 물주기 취소', () => {
     const plants = [makePlant({ wateringLogs: ['2026-06-13'] })]; // 오늘 아님
     const { plants: updated } = cancelWatering(plants, 'p1', TODAY);
     expect(updated[0].wateringLogs).toEqual(['2026-06-13']);
+  });
+});
+
+// ─────────────────────────────────────────
+describe('[UX] 함께한 지 n일째', () => {
+  it('등록 당일은 함께한 지 1일째', () => {
+    expect(bondDays(TODAY, TODAY)).toBe(1);
+  });
+
+  it('등록 다음날은 함께한 지 2일째', () => {
+    expect(bondDays('2026-06-19', TODAY)).toBe(2);
+  });
+
+  it('첫 물주기 날짜 수정 시 registeredAt도 함께 바뀌어 bondDays가 갱신됨', () => {
+    const plants = [makePlant({ registeredAt: '2026-01-01', wateringLogs: ['2026-01-01'] })];
+    const updated = editFirstWatering(plants, 'p1', '2026-06-18');
+    expect(updated[0].registeredAt).toBe('2026-06-18');
+    expect(updated[0].wateringLogs).toEqual(['2026-06-18']);
+    expect(bondDays(updated[0].registeredAt, TODAY)).toBe(3);
   });
 });
 
