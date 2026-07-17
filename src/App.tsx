@@ -6,6 +6,8 @@ import { SPECIES_DB } from './data';
 import type { CustomPlantData } from './screens/Add';
 import { todayISO, getStatus, getDueInfo, addDays, diffDays, buildCalendarWeeks, buildMiniCalendar, fmtDate, parseDate, getCurrentSeason } from './utils';
 import { loadPlants, savePlants } from './storage';
+import { getOrCreateUserKey } from './lib/userKey';
+import { upsertSchedule, deleteSchedule, syncAllSchedules } from './api/notificationApi';
 import { plantDoodle, shelfDoodle, SEARCH, HOME_NAV, CAL_NAV, CARE_ICONS, SUMMARY_NEED, SUMMARY_OK, CAN_STICKER, DROP_MINI, ARCHIVE_NAV, ARCHIVE_DOODLE } from './doodles';
 import HomeScreen from './screens/Home';
 import CalendarScreen from './screens/Calendar';
@@ -31,17 +33,23 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [userKey, setUserKey] = useState<string | null>(null);
   const [waterConfirm, setWaterConfirm] = useState<{ id: string; name: string } | null>(null);
   const { weather, permission: weatherPermission, requestPermission: requestWeather } = useWeather();
 
-  // 저장된 식물 불러오기
+  // 저장된 식물 불러오기 + userKey 발급 + 알림 스케줄 동기화
   useEffect(() => {
-    loadPlants().then(saved => {
+    Promise.all([loadPlants(), getOrCreateUserKey()]).then(([saved, key]) => {
+      const active = (saved ?? []).filter(p => !p.archived);
       if (saved && saved.length > 0) {
         setPlants(saved);
         setCalVisible(saved.map(p => p.id));
       }
       setLoaded(true);
+      if (key) {
+        setUserKey(key);
+        if (active.length > 0) syncAllSchedules(key, active);
+      }
     });
   }, []);
 
@@ -84,7 +92,11 @@ export default function App() {
   const doWater = (ids: string[]) => {
     const targets = plants.filter(p => ids.includes(p.id) && p.wateringLogs[p.wateringLogs.length - 1] !== TODAY);
     if (targets.length === 0) { showToast('오늘 이미 기록됐어요'); return; }
-    setPlants(prev => prev.map(p => targets.some(t => t.id === p.id) ? { ...p, wateringLogs: [...p.wateringLogs, TODAY] } : p));
+    setPlants(prev => {
+      const next = prev.map(p => targets.some(t => t.id === p.id) ? { ...p, wateringLogs: [...p.wateringLogs, TODAY] } : p);
+      if (userKey) targets.forEach(t => upsertSchedule(userKey, { ...t, wateringLogs: [...t.wateringLogs, TODAY] }));
+      return next;
+    });
     showToast(targets.length === 1 ? `${targets[0].name} 물 주기 완료!` : `${targets.length}개 식물에게 물 줬어요`);
   };
 
@@ -137,6 +149,7 @@ export default function App() {
   const deletePlant = (id: string) => {
     const p = plants.find(x => x.id === id);
     if (p) Analytics.click({ log_name: 'click_detail_delete', plant_id: p.id, species_id: p.speciesId, plant_type: p.type, bond_days: diffDays(p.registeredAt, TODAY), plant_status: getStatus(p, TODAY).key });
+    if (userKey) deleteSchedule(userKey, id);
     setPlants(prev => prev.filter(pl => pl.id !== id));
     setCalVisible(prev => prev.filter(pid => pid !== id));
     go('home');
@@ -147,6 +160,7 @@ export default function App() {
     const p = plants.find(x => x.id === id);
     if (!p) return;
     Analytics.click({ log_name: 'click_detail_archive', plant_id: p.id, species_id: p.speciesId, plant_type: p.type, plant_status: getStatus(p, TODAY).key, bond_days: diffDays(p.registeredAt, TODAY) });
+    if (userKey) deleteSchedule(userKey, id);
     setPlants(prev => prev.map(x => x.id !== id ? x : { ...x, archived: true, archivedAt: TODAY }));
     go('archive');
     showToast(`${p.name}을(를) 보관함으로 옮겼어요`);
@@ -158,6 +172,7 @@ export default function App() {
     const archivedDays = p.archivedAt ? diffDays(p.archivedAt, TODAY) : 0;
     Analytics.click({ log_name: 'click_detail_unarchive', plant_id: p.id, plant_type: p.type, archived_days: archivedDays });
     setPlants(prev => prev.map(x => x.id !== id ? x : { ...x, archived: false, archivedAt: undefined }));
+    if (userKey) upsertSchedule(userKey, { ...p, archived: false, archivedAt: undefined });
     go('home');
     showToast(`${p.name}이(가) 다시 식구로 돌아왔어요`);
   };
@@ -180,6 +195,7 @@ export default function App() {
       initialData: { name: data.name, speciesName: data.speciesName || data.name, sci: data.sci, type: data.type, color: data.color, waterIntervalDays: data.waterIntervalDays, waterTiming: data.waterTiming, light: data.light, temp: data.temp },
     };
     Analytics.click({ log_name: 'click_add_custom_confirm', plant_type: np.type, plant_count: activePlants.length + 1 });
+    if (userKey) upsertSchedule(userKey, np);
     setPlants(prev => [...prev, np]);
     setCalVisible(prev => [...prev, np.id]);
     setAddQuery('');
@@ -205,6 +221,7 @@ export default function App() {
       initialData: { name: finalName, speciesName: sp.name, sci: sp.sci, type: sp.type, color, waterIntervalDays: sp.waterIntervalDays, waterTiming: sp.waterTiming, light: sp.light, temp: sp.temp },
     };
     Analytics.click({ log_name: 'click_add_species_confirm', species_id: np.speciesId, plant_type: np.type, plant_count: activePlants.length + 1 });
+    if (userKey) upsertSchedule(userKey, np);
     setPlants(prev => [...prev, np]);
     setCalVisible(prev => [...prev, np.id]);
     setAddQuery('');

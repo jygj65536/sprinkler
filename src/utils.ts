@@ -187,3 +187,8 @@ export function buildMiniCalendar(plant: UserPlant, year: number, month: number)
   for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
   return weeks;
 }
+
+export function calcNextWateringDate(plant: UserPlant): string {
+  const last = plant.wateringLogs[plant.wateringLogs.length - 1];
+  return addDays(last, plant.waterIntervalDays[getCurrentSeason()]);
+}
