@@ -16,5 +16,10 @@ export default defineConfig({
     },
   },
   permissions: [{ name: 'geolocation', access: 'access' }],
+  navigationBar: {
+    // 앱이 자체 safe-top 패딩으로 상태바 여백을 이미 계산하므로, 네이티브 바가
+    // 별도 공간을 예약하면 이중 여백이 생김 — 오버레이로 전환해 웹뷰가 그 아래까지 확장되게 함
+    transparentBackground: true,
+  },
   outdir: "dist",
 });
