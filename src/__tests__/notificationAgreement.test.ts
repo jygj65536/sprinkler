@@ -8,7 +8,7 @@ import { requestNotificationAgreement } from '@apps-in-toss/web-framework';
 import { requestWateringNotificationAgreement } from '../lib/notificationAgreement';
 
 afterEach(() => {
-  vi.restoreAllMocks();
+  vi.clearAllMocks();
 });
 
 describe('requestWateringNotificationAgreement', () => {
@@ -19,10 +19,27 @@ describe('requestWateringNotificationAgreement', () => {
     );
   });
 
-  it('onEvent/onError 콜백을 전달한다', () => {
+  it('onEvent 발생 시 cleanup을 호출해 브릿지 리스너를 해제한다', () => {
+    const cleanup = vi.fn();
+    vi.mocked(requestNotificationAgreement).mockReturnValue(cleanup);
+
     requestWateringNotificationAgreement();
     const call = vi.mocked(requestNotificationAgreement).mock.calls[0][0];
-    expect(typeof call.onEvent).toBe('function');
-    expect(typeof call.onError).toBe('function');
+    call.onEvent({ type: 'newAgreement' });
+
+    expect(cleanup).toHaveBeenCalledTimes(1);
+  });
+
+  it('onError 발생 시에도 cleanup을 호출하고 에러를 로깅한다', () => {
+    const cleanup = vi.fn();
+    vi.mocked(requestNotificationAgreement).mockReturnValue(cleanup);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    requestWateringNotificationAgreement();
+    const call = vi.mocked(requestNotificationAgreement).mock.calls[0][0];
+    call.onError(new Error('boom'));
+
+    expect(cleanup).toHaveBeenCalledTimes(1);
+    expect(errorSpy).toHaveBeenCalled();
   });
 });

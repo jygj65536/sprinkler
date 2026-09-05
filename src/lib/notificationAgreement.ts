@@ -4,9 +4,14 @@ const TEMPLATE_CODE = import.meta.env.VITE_AIT_NOTIFICATION_TEMPLATE_CODE as str
 
 export function requestWateringNotificationAgreement(): void {
   if (!TEMPLATE_CODE) return;
-  requestNotificationAgreement({
+  const cleanup = requestNotificationAgreement({
     options: { templateCode: TEMPLATE_CODE },
-    onEvent: () => {},
-    onError: () => {},
+    onEvent: () => {
+      cleanup();
+    },
+    onError: (error: unknown) => {
+      console.error('[notificationAgreement]', error);
+      cleanup();
+    },
   });
 }
