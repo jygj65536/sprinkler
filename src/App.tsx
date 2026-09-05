@@ -7,6 +7,7 @@ import type { CustomPlantData } from './screens/Add';
 import { todayISO, getStatus, getDueInfo, addDays, diffDays, buildCalendarWeeks, buildMiniCalendar, fmtDate, parseDate, getCurrentSeason } from './utils';
 import { loadPlants, savePlants } from './storage';
 import { getOrCreateUserKey } from './lib/userKey';
+import { requestWateringNotificationAgreement } from './lib/notificationAgreement';
 import { upsertSchedule, deleteSchedule, syncAllSchedules } from './api/notificationApi';
 import { plantDoodle, shelfDoodle, SEARCH, HOME_NAV, CAL_NAV, CARE_ICONS, SUMMARY_NEED, SUMMARY_OK, CAN_STICKER, DROP_MINI, ARCHIVE_NAV, ARCHIVE_DOODLE } from './doodles';
 import HomeScreen from './screens/Home';
@@ -202,6 +203,7 @@ export default function App() {
     };
     Analytics.click({ log_name: 'click_add_custom_confirm', plant_type: np.type, plant_count: activePlants.length + 1 });
     if (userKey) upsertSchedule(userKey, np);
+    requestWateringNotificationAgreement();
     setPlants(prev => [...prev, np]);
     setCalVisible(prev => [...prev, np.id]);
     setAddQuery('');
@@ -228,6 +230,7 @@ export default function App() {
     };
     Analytics.click({ log_name: 'click_add_species_confirm', species_id: np.speciesId, plant_type: np.type, plant_count: activePlants.length + 1 });
     if (userKey) upsertSchedule(userKey, np);
+    requestWateringNotificationAgreement();
     setPlants(prev => [...prev, np]);
     setCalVisible(prev => [...prev, np.id]);
     setAddQuery('');
